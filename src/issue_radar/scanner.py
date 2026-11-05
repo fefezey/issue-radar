@@ -2,7 +2,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 
-from issue_radar import db, settings
+from issue_radar import ai, db, settings
 from issue_radar.github import contributed_repos, find_issues
 from issue_radar.i18n import DEFAULT_LANGUAGE
 from issue_radar.notify import notify_new_issues
@@ -93,6 +93,8 @@ def scan_forever() -> None:
             refresh_contributions()
             new_issues, error = scan()
             pending += new_issues
+            if new_issues:
+                ai.wake.set()  # summarize them now
         except Exception as e:  # keep scanning even if one scan fails
             error = e
         finally:

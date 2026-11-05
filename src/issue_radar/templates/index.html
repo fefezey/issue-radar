@@ -25,6 +25,12 @@
       --ok: #0F766E;
       --ok-dot: #0D9488;
       --ok-bg: #CCFBF1;
+      --medium: #92400E;
+      --medium-dot: #D97706;
+      --medium-bg: #FEF3C7;
+      --hard: #9D174D;
+      --hard-dot: #DB2777;
+      --hard-bg: #FCE7F3;
       --focus: #2563EB;
       --toast-bg: #111827;
       --toast-text: #F9FAFB;
@@ -47,6 +53,12 @@
         --ok: #99F6E4;
         --ok-dot: #2DD4BF;
         --ok-bg: rgba(45, 212, 191, 0.12);
+        --medium: #FCD34D;
+        --medium-dot: #F59E0B;
+        --medium-bg: rgba(245, 158, 11, 0.12);
+        --hard: #FBCFE8;
+        --hard-dot: #F472B6;
+        --hard-bg: rgba(244, 114, 182, 0.12);
         --focus: #93C5FD;
         --toast-bg: #1F2937;
         --toast-text: #F9FAFB;
@@ -168,13 +180,42 @@
       font-weight: 500;
       border-radius: 6px;
       padding: 4px 10px;
-      color: var(--ok);
-      background: var(--ok-bg);
+      color: var(--text-2);
+      background: var(--raised);
     }
-    .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
+    .badge::before { content: ""; width: 8px; height: 8px; flex: none; }
     .badges { display: flex; flex-wrap: wrap; gap: 8px; }
-    .badge.known { color: var(--muted); background: var(--raised); }
+    .badge.unclaimed::before { border-radius: 50%; background: var(--ok-dot); }
+    .badge.known { color: var(--muted); }
     .badge.known::before { background: var(--muted); border-radius: 2px; }
+    .badge.plain::before { content: none; }
+    /* Difficulty: color and shape, so it doesn't depend on color alone. */
+    .badge.easy { color: var(--ok); background: var(--ok-bg); }
+    .badge.easy::before { border-radius: 50%; background: var(--ok-dot); }
+    .badge.medium { color: var(--medium); background: var(--medium-bg); }
+    .badge.medium::before { border-radius: 2px; background: var(--medium-dot); }
+    .badge.hard { color: var(--hard); background: var(--hard-bg); }
+    .badge.hard::before { width: 7px; height: 7px; transform: rotate(45deg); background: var(--hard-dot); }
+
+    .summary {
+      margin: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .summary p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+    .summary-label {
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .summary.pending { font-size: 13px; color: var(--muted); }
 
     .actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .actions form { margin: 0; }
@@ -409,13 +450,29 @@
           </div>
           <h2 lang="en"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
 
-          {% if tab == 'new' %}
-            <div class="badges">
-              <span class="badge">{{ t('issue.unclaimed') }}</span>
+          <div class="badges">
+            {% if issue.difficulty %}
+              <span class="badge {{ issue.difficulty }}">{{ t('difficulty.' ~ issue.difficulty) }}</span>
+              <span class="badge plain">{{ t('effort.' ~ issue.effort) }}</span>
+            {% endif %}
+            {% if tab == 'new' %}
+              <span class="badge unclaimed">{{ t('issue.unclaimed') }}</span>
               {% if issue.repo in contributed %}
                 <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
               {% endif %}
+            {% endif %}
+          </div>
+
+          {% if issue.summary %}
+            <div class="summary">
+              <span class="summary-label" title="{{ t('ai.note') }}">{{ t('ai.label') }}</span>
+              <p lang="{{ issue.summary_lang }}">{{ issue.summary }}</p>
             </div>
+          {% elif ai_on %}
+            <p class="summary pending">{{ t('ai.pending') }}</p>
+          {% endif %}
+
+          {% if tab == 'new' %}
             <div class="actions">
               <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
                     onsubmit="setTimeout(() => location.reload(), 300)">

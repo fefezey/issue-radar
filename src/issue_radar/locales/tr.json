@@ -51,5 +51,16 @@
   "settings.stars.any": "Fark etmez",
   "settings.save": "Kaydet",
   "settings.saved": "Ayarlar kaydedildi ve liste güncellendi. Yeni tarama en geç 1 dakika içinde başlayacak.",
-  "settings.error.no_language": "En az bir dil seç."
+  "settings.error.no_language": "En az bir dil seç.",
+
+  "difficulty.easy": "Kolay",
+  "difficulty.medium": "Orta",
+  "difficulty.hard": "Zor",
+  "effort.under_1h": "1 saatten az",
+  "effort.1_3h": "1-3 saat",
+  "effort.3_8h": "3-8 saat",
+  "effort.over_1d": "1 günden fazla",
+  "ai.label": "Yapay zeka özeti",
+  "ai.note": "Bilgisayarındaki bir yapay zeka modeli yazdı. Yanılabilir; başlamadan önce işin kendisini oku.",
+  "ai.pending": "Özet hazırlanıyor…"
 }

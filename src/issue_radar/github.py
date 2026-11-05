@@ -134,3 +134,13 @@ def contributed_repos(max_pages: int = 3) -> dict[str, int]:
             if len(pull_requests) < 100:
                 break
     return counts
+
+
+def issue_body(url: str) -> str:
+    """The description of an issue, from its web address
+    ("https://github.com/owner/repo/issues/12")."""
+    path = url.removeprefix("https://github.com/")
+    with _client() as client:
+        response = client.get(f"/repos/{path}")
+        response.raise_for_status()
+        return response.json().get("body") or ""

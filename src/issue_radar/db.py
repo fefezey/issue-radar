@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS issues (
     created_at TEXT NOT NULL,        -- when the issue was opened on GitHub
     found_at   TEXT NOT NULL,        -- when we first saw it
     status     TEXT NOT NULL DEFAULT 'new'  -- new | interested | skipped
+    -- Later additions are in ADDED_ISSUE_COLUMNS below.
 );
 
 CREATE TABLE IF NOT EXISTS blocked_repos (
@@ -42,6 +43,26 @@ CREATE TABLE IF NOT EXISTS repo_stars (
 """
 
 
+# Columns added to `issues` after the first release. Databases created
+# earlier get them on the next start, without losing any data.
+ADDED_ISSUE_COLUMNS = {
+    "body": "TEXT",  # the issue's description, shortened
+    "summary": "TEXT",  # AI summary
+    "summary_lang": "TEXT",  # language the summary is written in
+    "difficulty": "TEXT",  # easy | medium | hard
+    "effort": "TEXT",  # under_1h | 1_3h | 3_8h | over_1d
+}
+
+BODY_MAX_LENGTH = 4000
+
+
+def _add_missing_columns(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(issues)")}
+    for name, kind in ADDED_ISSUE_COLUMNS.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE issues ADD COLUMN {name} {kind}")
+
+
 @contextmanager
 def connect():
     DB_PATH.parent.mkdir(exist_ok=True)
@@ -49,6 +70,7 @@ def connect():
     conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _add_missing_columns(conn)
     try:
         yield conn
         conn.commit()
@@ -63,8 +85,8 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
     for issue in issues:
         cursor = conn.execute(
             """
-            INSERT OR IGNORE INTO issues (id, repo, title, url, stars, language, created_at, found_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO issues (id, repo, title, url, stars, language, created_at, found_at, body)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 issue["id"],
@@ -75,6 +97,7 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
                 language,
                 issue["created_at"],
                 now,
+                (issue.get("body") or "")[:BODY_MAX_LENGTH],
             ),
         )
         if cursor.rowcount == 1:
@@ -106,6 +129,34 @@ def list_issues(
 
 def get_issue(conn: sqlite3.Connection, issue_id: int) -> sqlite3.Row | None:
     return conn.execute("SELECT * FROM issues WHERE id = ?", (issue_id,)).fetchone()
+
+
+def issues_to_summarize(conn: sqlite3.Connection, lang: str, limit: int) -> list[sqlite3.Row]:
+    """New issues without a summary in `lang` yet, newest first, skipping hidden projects."""
+    return conn.execute(
+        """
+        SELECT * FROM issues
+        WHERE status IN ('new', 'interested')
+          AND (summary IS NULL OR summary_lang IS NOT ?)
+          AND repo NOT IN (SELECT repo FROM blocked_repos)
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (lang, limit),
+    ).fetchall()
+
+
+def set_body(conn: sqlite3.Connection, issue_id: int, body: str) -> None:
+    conn.execute("UPDATE issues SET body = ? WHERE id = ?", (body[:BODY_MAX_LENGTH], issue_id))
+
+
+def save_summary(
+    conn: sqlite3.Connection, issue_id: int, summary: str, difficulty: str, effort: str, lang: str
+) -> None:
+    conn.execute(
+        "UPDATE issues SET summary = ?, difficulty = ?, effort = ?, summary_lang = ? WHERE id = ?",
+        (summary, difficulty, effort, lang, issue_id),
+    )
 
 
 def set_status(conn: sqlite3.Connection, issue_id: int, status: str) -> None:

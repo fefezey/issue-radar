@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, abort, g, redirect, render_template, request, url_for
 
-from issue_radar import db, settings
+from issue_radar import ai, db, settings
 from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
 from issue_radar.languages import SUPPORTED_LANGUAGES, language_name
 from issue_radar.scanner import status, wake
@@ -93,6 +93,7 @@ def index():
         skipped=skipped,
         hidden_repo=request.args.get("undo_repo"),
         contributed=contributed,
+        ai_on=ai.status["available"],
         scan_text=scan_text(),
         scanning=status["scanning"],
         scan_failed=bool(status["error"]),
@@ -125,6 +126,7 @@ def set_language():
     if lang in available_languages():
         with db.connect() as conn:
             db.set_setting(conn, "language", lang)
+        ai.wake.set()  # write summaries in the new language
     tab = request.form.get("tab", "new")
     return redirect(url_for("index", tab=tab if tab in TABS else "new"))
 
