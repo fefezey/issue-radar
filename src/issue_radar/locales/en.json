@@ -10,6 +10,8 @@
   "issue.stars.one": "{stars} star",
   "issue.stars.other": "{stars} stars",
   "issue.unclaimed": "Nobody has claimed it",
+  "issue.contributed_before.one": "You've opened 1 PR here",
+  "issue.contributed_before.other": "You've opened {count} PRs here",
 
   "action.interested": "I'm interested",
   "action.skip": "Skip",

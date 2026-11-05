@@ -172,6 +172,9 @@
       background: var(--ok-bg);
     }
     .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge.known { color: var(--muted); background: var(--raised); }
+    .badge.known::before { background: var(--muted); border-radius: 2px; }
 
     .actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .actions form { margin: 0; }
@@ -407,7 +410,12 @@
           <h2 lang="en"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
 
           {% if tab == 'new' %}
-            <span class="badge">{{ t('issue.unclaimed') }}</span>
+            <div class="badges">
+              <span class="badge">{{ t('issue.unclaimed') }}</span>
+              {% if issue.repo in contributed %}
+                <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
+              {% endif %}
+            </div>
             <div class="actions">
               <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
                     onsubmit="setTimeout(() => location.reload(), 300)">

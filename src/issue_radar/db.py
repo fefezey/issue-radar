@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL
 );
 
+-- Projects you've opened pull requests in, refreshed once a day.
+CREATE TABLE IF NOT EXISTS contributions (
+    repo          TEXT PRIMARY KEY,
+    pull_requests INTEGER NOT NULL
+);
+
 -- Star counts we already looked up, so we don't ask GitHub again every scan.
 CREATE TABLE IF NOT EXISTS repo_stars (
     repo       TEXT PRIMARY KEY,
@@ -130,6 +136,26 @@ def save_repo_stars(conn: sqlite3.Connection, stars: dict[str, int]) -> None:
         """,
         [(repo, count, now) for repo, count in stars.items()],
     )
+
+
+def save_contributions(conn: sqlite3.Connection, counts: dict[str, int]) -> None:
+    """Replace the list of projects you've contributed to."""
+    conn.execute("DELETE FROM contributions")
+    conn.executemany("INSERT INTO contributions (repo, pull_requests) VALUES (?, ?)", counts.items())
+    set_setting(conn, "contributions_checked_at", datetime.now(timezone.utc).isoformat())
+
+
+def contributions_checked_at(conn: sqlite3.Connection) -> datetime | None:
+    checked = get_setting(conn, "contributions_checked_at")
+    return datetime.fromisoformat(checked) if checked else None
+
+
+def load_contributions(conn: sqlite3.Connection) -> dict[str, int] | None:
+    """Projects you've contributed to and how many pull requests you opened in each,
+    or None if we haven't been able to check yet."""
+    if contributions_checked_at(conn) is None:
+        return None
+    return {row["repo"]: row["pull_requests"] for row in conn.execute("SELECT * FROM contributions")}
 
 
 def get_setting(conn: sqlite3.Connection, key: str) -> str | None:

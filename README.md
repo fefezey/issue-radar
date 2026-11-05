@@ -14,6 +14,7 @@ It runs on your own computer: no account, no server, your choices stay on your d
 
 - 🔍 **Finds new `good first issue`s** in the languages you choose, newest first.
 - ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
+- 🌱 **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
 - ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this".
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo.
@@ -91,7 +92,7 @@ Your issues and choices are stored in `~/.issue-radar/issues.db`. Delete this fi
 ```
 src/issue_radar/
 ├── __init__.py      starts the scanner and the web page
-├── github.py        talks to GitHub: search, star counts, claimed issues
+├── github.py        talks to GitHub: search, star counts, claimed issues, your pull requests
 ├── scanner.py       scans on a schedule and decides when to notify
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database

@@ -107,3 +107,30 @@ def find_issues(
                     break
 
     return issues
+
+
+def contributed_repos(max_pages: int = 3) -> dict[str, int]:
+    """Repositories where the signed-in user has opened pull requests, and how many.
+
+    Every PR counts, merged or not: once you've opened one somewhere,
+    it's no longer your first contribution there.
+    """
+    counts: dict[str, int] = {}
+    with _client() as client:
+        user = client.get("/user")
+        user.raise_for_status()
+        login = user.json()["login"]
+
+        for page in range(1, max_pages + 1):
+            response = client.get(
+                "/search/issues",
+                params={"q": f"is:pr author:{login}", "per_page": 100, "page": page},
+            )
+            response.raise_for_status()
+            pull_requests = response.json()["items"]
+            for pr in pull_requests:
+                repo = pr["repository_url"].removeprefix(f"{API_URL}/repos/")
+                counts[repo] = counts.get(repo, 0) + 1
+            if len(pull_requests) < 100:
+                break
+    return counts

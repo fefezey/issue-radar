@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from issue_radar import db, settings
-from issue_radar.github import find_issues
+from issue_radar.github import contributed_repos, find_issues
 from issue_radar.i18n import DEFAULT_LANGUAGE
 from issue_radar.notify import notify_new_issues
 
@@ -13,6 +13,7 @@ NOTIFY_INTERVAL = 60 * 60  # at most one notification per hour
 STARS_MAX_AGE = timedelta(days=1)  # look up a repository's star count again after this
 SEARCH_PAUSE = 5  # seconds between two languages' searches; GitHub's search is sensitive to bursts
 MIN_SCAN_GAP = 60  # even when woken early (settings saved), wait this long after the last scan
+CONTRIBUTIONS_MAX_AGE = timedelta(days=1)  # look up your own pull requests again after this
 
 # Read by the web page to show what the scanner is doing.
 status = {"scanning": False, "last_scan": None, "error": None}
@@ -57,6 +58,26 @@ def scan() -> tuple[list[dict], Exception | None]:
     return new_issues, error
 
 
+def refresh_contributions() -> None:
+    """Once a day, look up which projects you've already sent pull requests to.
+
+    Failing here is not a problem: issues are still shown, just without the
+    "your first contribution" badge.
+    """
+    with db.connect() as conn:
+        checked = db.contributions_checked_at(conn)
+    if checked and datetime.now(timezone.utc) - checked < CONTRIBUTIONS_MAX_AGE:
+        return
+    try:
+        counts = contributed_repos()
+    except Exception as error:
+        print(f"Katkıların alınamadı: {error}", flush=True)
+        return
+    with db.connect() as conn:
+        db.save_contributions(conn, counts)
+    time.sleep(SEARCH_PAUSE)  # don't search again right away
+
+
 def scan_forever() -> None:
     """Scan every SCAN_INTERVAL seconds and notify about new issues.
 
@@ -69,6 +90,7 @@ def scan_forever() -> None:
     while True:
         status["scanning"] = True
         try:
+            refresh_contributions()
             new_issues, error = scan()
             pending += new_issues
         except Exception as e:  # keep scanning even if one scan fails

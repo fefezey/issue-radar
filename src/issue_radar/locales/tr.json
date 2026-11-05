@@ -9,6 +9,7 @@
 
   "issue.stars.other": "{stars} yıldız",
   "issue.unclaimed": "Kimse almamış",
+  "issue.contributed_before.other": "Daha önce {count} PR açtın",
 
   "action.interested": "İlgileniyorum",
   "action.skip": "Geç",

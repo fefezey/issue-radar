@@ -76,6 +76,10 @@ def index():
         min_stars = settings.min_stars(conn)
         new_issues = db.list_issues(conn, "new", languages, min_stars)
         interested_issues = db.list_issues(conn, "interested")
+        contributed = db.load_contributions(conn) or {}
+        if contributed:
+            # Projects you haven't contributed to yet come first; newest first within each group.
+            new_issues = sorted(new_issues, key=lambda issue: issue["repo"] in contributed)
         hidden_repos = db.list_blocked_repos(conn)
         undo_issue = request.args.get("undo_issue", type=int)
         skipped = db.get_issue(conn, undo_issue) if undo_issue else None
@@ -88,6 +92,7 @@ def index():
         hidden_repos=hidden_repos,
         skipped=skipped,
         hidden_repo=request.args.get("undo_repo"),
+        contributed=contributed,
         scan_text=scan_text(),
         scanning=status["scanning"],
         scan_failed=bool(status["error"]),
