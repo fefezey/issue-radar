@@ -61,9 +61,20 @@ def _is_claimed(client: httpx.Client, issue: dict) -> bool:
     )
 
 
-def find_issues(language: str, min_stars: int = 100, limit: int = 10) -> list[dict]:
+def find_issues(
+    language: str,
+    min_stars: int = 100,
+    limit: int = 10,
+    stars: dict[str, int] | None = None,
+) -> list[dict]:
     """Return the newest open "good first issue"s in the given language that
-    nobody has taken yet, only from repositories with at least `min_stars` stars."""
+    nobody has taken yet, only from repositories with at least `min_stars` stars.
+
+    `stars` holds star counts we already know; new lookups are added to it,
+    so the caller can keep them for the next scan.
+    """
+    if stars is None:
+        stars = {}
     # no:assignee  -> nobody is assigned to it
     # -linked:pr   -> no pull request has been opened for it
     query = (
@@ -79,8 +90,7 @@ def find_issues(language: str, min_stars: int = 100, limit: int = 10) -> list[di
         response.raise_for_status()
 
         # GitHub's issue search can't filter by stars, so we look up each
-        # repository once and remember its star count.
-        stars: dict[str, int] = {}
+        # repository we don't know yet and remember its star count.
         issues = []
         for issue in response.json()["items"]:
             repo = issue["repository_url"].removeprefix(f"{API_URL}/repos/")

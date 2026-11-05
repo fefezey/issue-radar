@@ -45,5 +45,15 @@
   "time.days.one": "1 day ago",
   "time.days.other": "{count} days ago",
 
-  "notify.many": "{count} new issues found"
+  "notify.many": "{count} new issues found",
+
+  "nav.settings": "Settings",
+  "settings.languages.title": "Languages to search",
+  "settings.languages.hint": "You'll see issues from projects written in these languages.",
+  "settings.stars.title": "Minimum stars",
+  "settings.stars.hint": "Issues from smaller projects are hidden.",
+  "settings.stars.any": "Any",
+  "settings.save": "Save",
+  "settings.saved": "Settings saved and the list updated. A new scan starts within a minute.",
+  "settings.error.no_language": "Pick at least one language."
 }

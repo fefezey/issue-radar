@@ -40,5 +40,15 @@
   "time.hours.other": "{count} saat önce",
   "time.days.other": "{count} gün önce",
 
-  "notify.many": "{count} yeni iş bulundu"
+  "notify.many": "{count} yeni iş bulundu",
+
+  "nav.settings": "Ayarlar",
+  "settings.languages.title": "Taranacak diller",
+  "settings.languages.hint": "Bu dillerde yazılmış projelerin işlerini görürsün.",
+  "settings.stars.title": "En az yıldız",
+  "settings.stars.hint": "Daha küçük projelerin işleri gizlenir.",
+  "settings.stars.any": "Fark etmez",
+  "settings.save": "Kaydet",
+  "settings.saved": "Ayarlar kaydedildi ve liste güncellendi. Yeni tarama en geç 1 dakika içinde başlayacak.",
+  "settings.error.no_language": "En az bir dil seç."
 }

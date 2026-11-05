@@ -1,7 +1,26 @@
-# Languages to search. Change or add to this list to see other languages.
-LANGUAGES = ["python", "javascript"]
+# Languages you can pick on the settings page, as GitHub's search understands them.
+SUPPORTED_LANGUAGES = [
+    "python",
+    "javascript",
+    "typescript",
+    "go",
+    "rust",
+    "java",
+    "csharp",
+    "cpp",
+    "ruby",
+    "php",
+    "kotlin",
+    "swift",
+]
 
-_DISPLAY_NAMES = {"javascript": "JavaScript", "typescript": "TypeScript", "php": "PHP", "c++": "C++"}
+_DISPLAY_NAMES = {
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "csharp": "C#",
+    "cpp": "C++",
+    "php": "PHP",
+}
 
 
 def language_name(name: str) -> str:

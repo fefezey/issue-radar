@@ -13,10 +13,11 @@ It runs on your own computer: no account, no server, your choices stay on your d
 ## Features
 
 - 🔍 **Finds new `good first issue`s** in the languages you choose, newest first.
-- ⭐ **Skips tiny projects** — only repositories with at least 100 stars.
+- ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
 - ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this".
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo.
+- ⚙️ **Settings page** — pick the languages to search and the minimum stars.
 - 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
 - 🌗 Light and dark theme, following your system.
 
@@ -25,14 +26,13 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - [ ] AI summaries in your language, with difficulty and time estimates
 - [ ] A ready-to-post "I'd like to work on this" comment draft
 - [ ] More interface languages — [add yours](#add-a-language)
-- [ ] Settings page (languages, minimum stars, scan interval)
 - [ ] Notifications on Linux and Windows
 - [ ] Telegram and Discord notifications
 
 ## How it works
 
 1. **Scan** — every 10 minutes, search GitHub for new open issues labeled `good first issue`.
-2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with fewer than 100 stars.
+2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with too few stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
 3. **Notify** — save new issues locally and show a Mac notification.
 4. **Decide** — open the web page and pick what you want to work on.
 
@@ -69,14 +69,20 @@ On macOS, notifications are shown through AppleScript, so they appear as coming 
 
 ## Configuration
 
-There is no settings page yet. For now, change these values in the code:
+Open **Settings** on the page to choose:
 
-| What | Where | Default |
+- **Languages to search** — Python, JavaScript, TypeScript, Go, Rust, Java, C#, C++, Ruby, PHP, Kotlin, Swift. Default: Python and JavaScript.
+- **Minimum stars** — any, 50, 100, 500 or 1000. Default: 100.
+
+Changes apply right away, and a new scan starts immediately.
+
+These are still set in the code, in `src/issue_radar/scanner.py`:
+
+| What | Name | Default |
 | --- | --- | --- |
-| Languages to search | `LANGUAGES` in `src/issue_radar/languages.py` | `python`, `javascript` |
-| Minimum stars | `min_stars` in `src/issue_radar/github.py` | `100` |
-| Scan interval | `SCAN_INTERVAL` in `src/issue_radar/scanner.py` | 10 minutes |
-| Notification interval | `NOTIFY_INTERVAL` in `src/issue_radar/scanner.py` | 1 hour |
+| Scan interval | `SCAN_INTERVAL` | 10 minutes |
+| Retry after a failed scan | `RETRY_INTERVAL` | 5 minutes |
+| Notification interval | `NOTIFY_INTERVAL` | 1 hour |
 
 Your issues and choices are stored in `~/.issue-radar/issues.db`. Delete this file to start over.
 
@@ -90,7 +96,8 @@ src/issue_radar/
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes
-├── languages.py     which languages to search
+├── languages.py     languages you can search, and their display names
+├── settings.py      settings from the settings page
 ├── i18n.py          translations
 ├── locales/         one JSON file per interface language
 └── templates/

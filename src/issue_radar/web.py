@@ -2,15 +2,15 @@ from datetime import datetime, timezone
 
 from flask import Flask, abort, g, redirect, render_template, request, url_for
 
-from issue_radar import db
+from issue_radar import db, settings
 from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
-from issue_radar.languages import language_name
-from issue_radar.scanner import status
+from issue_radar.languages import SUPPORTED_LANGUAGES, language_name
+from issue_radar.scanner import status, wake
 
 app = Flask(__name__)
 app.add_template_filter(language_name, "language")
 
-TABS = ("new", "interested", "hidden")
+TABS = ("new", "interested", "hidden", "settings")
 
 
 def t(key: str, count: int | None = None, **values) -> str:
@@ -72,7 +72,9 @@ def index():
     if tab not in TABS:
         tab = "new"
     with db.connect() as conn:
-        new_issues = db.list_issues(conn, "new")
+        languages = settings.search_languages(conn)
+        min_stars = settings.min_stars(conn)
+        new_issues = db.list_issues(conn, "new", languages, min_stars)
         interested_issues = db.list_issues(conn, "interested")
         hidden_repos = db.list_blocked_repos(conn)
         undo_issue = request.args.get("undo_issue", type=int)
@@ -89,7 +91,27 @@ def index():
         scan_text=scan_text(),
         scanning=status["scanning"],
         scan_failed=bool(status["error"]),
+        all_languages=SUPPORTED_LANGUAGES,
+        chosen_languages=languages,
+        min_stars=min_stars,
+        min_stars_choices=settings.MIN_STARS_CHOICES,
+        saved=request.args.get("saved") == "1",
+        settings_error=request.args.get("error") == "no_language",
     )
+
+
+@app.post("/settings")
+def save_settings():
+    stars = request.form.get("min_stars", type=int)
+    if stars not in settings.MIN_STARS_CHOICES:
+        stars = settings.DEFAULT_MIN_STARS
+    try:
+        with db.connect() as conn:
+            settings.save(conn, request.form.getlist("languages"), stars)
+    except ValueError:
+        return redirect(url_for("index", tab="settings", error="no_language"))
+    wake.set()  # scan again right away with the new settings
+    return redirect(url_for("index", tab="settings", saved="1"))
 
 
 @app.post("/language")

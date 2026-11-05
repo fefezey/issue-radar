@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DB_PATH = Path.home() / ".issue-radar" / "issues.db"
@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS blocked_repos (
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+
+-- Star counts we already looked up, so we don't ask GitHub again every scan.
+CREATE TABLE IF NOT EXISTS repo_stars (
+    repo       TEXT PRIMARY KEY,
+    stars      INTEGER NOT NULL,
+    checked_at TEXT NOT NULL
 );
 """
 
@@ -69,15 +76,26 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
     return new_issues
 
 
-def list_issues(conn: sqlite3.Connection, status: str) -> list[sqlite3.Row]:
-    return conn.execute(
-        """
+def list_issues(
+    conn: sqlite3.Connection,
+    status: str,
+    languages: list[str] | None = None,
+    min_stars: int = 0,
+) -> list[sqlite3.Row]:
+    """Issues with this status, newest first, skipping hidden projects.
+
+    `languages` and `min_stars` narrow the list, so changing the settings
+    takes effect right away, before the next scan.
+    """
+    query = """
         SELECT * FROM issues
-        WHERE status = ? AND repo NOT IN (SELECT repo FROM blocked_repos)
-        ORDER BY created_at DESC
-        """,
-        (status,),
-    ).fetchall()
+        WHERE status = ? AND stars >= ? AND repo NOT IN (SELECT repo FROM blocked_repos)
+    """
+    params: list = [status, min_stars]
+    if languages is not None:
+        query += f" AND language IN ({', '.join('?' * len(languages))})"
+        params += languages
+    return conn.execute(query + " ORDER BY created_at DESC", params).fetchall()
 
 
 def get_issue(conn: sqlite3.Connection, issue_id: int) -> sqlite3.Row | None:
@@ -94,6 +112,24 @@ def block_repo(conn: sqlite3.Connection, repo: str) -> None:
 
 def unblock_repo(conn: sqlite3.Connection, repo: str) -> None:
     conn.execute("DELETE FROM blocked_repos WHERE repo = ?", (repo,))
+
+
+def load_repo_stars(conn: sqlite3.Connection, max_age: timedelta) -> dict[str, int]:
+    """Star counts looked up within `max_age`."""
+    since = (datetime.now(timezone.utc) - max_age).isoformat()
+    rows = conn.execute("SELECT repo, stars FROM repo_stars WHERE checked_at >= ?", (since,))
+    return {row["repo"]: row["stars"] for row in rows}
+
+
+def save_repo_stars(conn: sqlite3.Connection, stars: dict[str, int]) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.executemany(
+        """
+        INSERT INTO repo_stars (repo, stars, checked_at) VALUES (?, ?, ?)
+        ON CONFLICT(repo) DO UPDATE SET stars = excluded.stars, checked_at = excluded.checked_at
+        """,
+        [(repo, count, now) for repo, count in stars.items()],
+    )
 
 
 def get_setting(conn: sqlite3.Connection, key: str) -> str | None:
