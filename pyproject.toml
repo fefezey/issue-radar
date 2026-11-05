@@ -1,11 +1,12 @@
 [project]
 name = "issue-radar"
 version = "0.1.0"
-description = "Add your description here"
+description = "Find new, unclaimed good first issues on GitHub and get notified."
 readme = "README.md"
 authors = [
     { name = "fefezey", email = "fefezey1903@gmail.com" }
 ]
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     "flask>=3.1.3",
