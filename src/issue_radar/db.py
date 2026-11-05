@@ -84,3 +84,11 @@ def set_status(conn: sqlite3.Connection, issue_id: int, status: str) -> None:
 
 def block_repo(conn: sqlite3.Connection, repo: str) -> None:
     conn.execute("INSERT OR IGNORE INTO blocked_repos (repo) VALUES (?)", (repo,))
+
+
+def unblock_repo(conn: sqlite3.Connection, repo: str) -> None:
+    conn.execute("DELETE FROM blocked_repos WHERE repo = ?", (repo,))
+
+
+def list_blocked_repos(conn: sqlite3.Connection) -> list[str]:
+    return [row["repo"] for row in conn.execute("SELECT repo FROM blocked_repos ORDER BY repo")]

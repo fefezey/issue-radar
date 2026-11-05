@@ -4,132 +4,347 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Issue Radar</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563EB'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='white' stroke-width='6'/%3E%3Cpath d='M32 32 L46 18' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <style>
     :root {
-      --bg: #f6f7f9;
-      --card: #ffffff;
-      --text: #1d2129;
-      --muted: #6b7280;
-      --border: #e3e6ea;
-      --accent: #2563eb;
-      --accent-text: #ffffff;
-      --star: #b7791f;
+      --bg: #F3F4F6;
+      --surface: #FFFFFF;
+      --raised: #F3F4F6;
+      --border: #E5E7EB;
+      --text: #111827;
+      --text-2: #374151;
+      --muted: #4B5563;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-soft: #DBEAFE;
+      --mark: #2563EB;
+      --blip: #1D4ED8;
+      --ok: #0F766E;
+      --ok-dot: #0D9488;
+      --ok-bg: #CCFBF1;
+      --focus: #2563EB;
+      --toast-bg: #111827;
+      --toast-text: #F9FAFB;
+      --toast-action: #93C5FD;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111418;
-        --card: #1a1e24;
-        --text: #e6e8eb;
-        --muted: #9aa3ae;
-        --border: #2a3038;
-        --accent: #3b82f6;
-        --star: #f0b429;
+        --bg: #0B0F17;
+        --surface: #111827;
+        --raised: #1A2230;
+        --border: #263042;
+        --text: #E5E7EB;
+        --text-2: #D1D5DB;
+        --muted: #9CA3AF;
+        --accent: #2563EB;
+        --accent-hover: #1D4ED8;
+        --accent-soft: rgba(37, 99, 235, 0.16);
+        --mark: #3B82F6;
+        --blip: #93C5FD;
+        --ok: #99F6E4;
+        --ok-dot: #2DD4BF;
+        --ok-bg: rgba(45, 212, 191, 0.12);
+        --focus: #93C5FD;
+        --toast-bg: #1F2937;
+        --toast-text: #F9FAFB;
+        --toast-action: #93C5FD;
       }
     }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 15px/1.5 Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
-    header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
-    h1 { font-size: 22px; margin: 0; }
-    nav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    a { color: inherit; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+    header { border-bottom: 1px solid var(--border); }
+    .bar {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 96px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    nav { flex: 1 1 200px; display: flex; flex-direction: column; gap: 4px; }
     nav a {
-      padding: 8px 12px;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       color: var(--muted);
       text-decoration: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
     }
-    nav a.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+    nav a:hover { color: var(--text); }
+    nav a[aria-current="page"] { background: var(--raised); color: var(--text); font-weight: 600; }
     .count {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-radius: 999px;
-      padding: 0 7px;
       font-size: 12px;
-      margin-left: 4px;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 1px 8px;
+      background: var(--border);
+      color: var(--text-2);
     }
+    .count.new { background: var(--accent); color: #FFFFFF; }
+
+    main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 4px; }
+
     article {
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 12px;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
-    .meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
-    .meta .repo { color: var(--text); font-weight: 600; }
-    .meta .stars { color: var(--star); }
-    h2 { font-size: 16px; margin: 6px 0 12px; overflow-wrap: anywhere; }
-    h2 a { color: inherit; text-decoration: none; }
+    .meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+    .meta .repo { color: var(--text); font-weight: 500; }
+    h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin: 0; overflow-wrap: anywhere; }
+    h2 a { text-decoration: none; }
     h2 a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: var(--ok);
+      background: var(--ok-bg);
+    }
+    .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
+
     .actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .actions form { margin: 0; }
-    button {
+    .btn {
       font: inherit;
       font-size: 14px;
-      padding: 6px 12px;
-      border-radius: 6px;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
       border: 1px solid var(--border);
       background: transparent;
       color: var(--text);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
     }
-    button:hover { border-color: var(--muted); }
-    button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-    .empty { color: var(--muted); text-align: center; padding: 48px 0; }
+    .btn:hover { background: var(--raised); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #FFFFFF; font-weight: 500; }
+    .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn.quiet { border-color: transparent; color: var(--muted); }
+    .btn.quiet:hover { color: var(--text); }
+
+    .list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .list form {
+      margin: 0;
+      padding: 10px 12px 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .list form:last-child { border-bottom: none; }
+
+    .empty {
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty strong { color: var(--text); font-size: 15px; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      max-width: calc(100% - 32px);
+      background: var(--toast-bg);
+      color: var(--toast-text);
+      border-radius: 10px;
+      padding: 8px 8px 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      white-space: nowrap;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .toast form { margin: 0; }
+    .toast button {
+      font: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      min-height: 36px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--toast-action);
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>📡 Issue Radar</h1>
-  </header>
+<header>
+  <div class="bar">
+    <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 32 L32 6 A26 26 0 0 1 50.38 13.62 Z" fill="var(--mark)" fill-opacity="0.22"/>
+      <circle cx="32" cy="32" r="26" fill="none" stroke="var(--mark)" stroke-width="4"/>
+      <circle cx="32" cy="32" r="14" fill="none" stroke="var(--mark)" stroke-width="4" stroke-opacity="0.55"/>
+      <path d="M32 32 L50.38 13.62" stroke="var(--mark)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="40.5" cy="14" r="4" fill="var(--blip)"/>
+    </svg>
+    <span class="brand">issue radar</span>
+  </div>
+</header>
 
-  <nav>
-    <a href="{{ url_for('index') }}" class="{{ 'active' if tab == 'new' }}">
-      Yeni işler{% if new_count %}<span class="count">{{ new_count }}</span>{% endif %}
+<div class="layout">
+  <nav aria-label="Bölümler">
+    <a href="{{ url_for('index') }}" {% if tab == 'new' %}aria-current="page"{% endif %}>
+      Yeni işler {% if counts.new %}<span class="count new">{{ counts.new }}</span>{% endif %}
     </a>
-    <a href="{{ url_for('index', tab='interested') }}" class="{{ 'active' if tab == 'interested' }}">
-      İlgilendiklerim
+    <a href="{{ url_for('index', tab='interested') }}" {% if tab == 'interested' %}aria-current="page"{% endif %}>
+      İlgilendiklerim {% if counts.interested %}<span class="count">{{ counts.interested }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('index', tab='hidden') }}" {% if tab == 'hidden' %}aria-current="page"{% endif %}>
+      Gizli projeler {% if counts.hidden %}<span class="count">{{ counts.hidden }}</span>{% endif %}
     </a>
   </nav>
 
-  {% for issue in issues %}
-    <article>
-      <div class="meta">
-        <span class="repo">{{ issue.repo }}</span>
-        <span class="stars">⭐ {{ issue.stars }}</span>
-        <span>{{ issue.language }}</span>
-        <span>{{ issue.created_at | ago }}</span>
-      </div>
-      <h2><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
-
-      {% if tab == 'new' %}
-        <div class="actions">
-          <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
-                onsubmit="setTimeout(() => this.closest('article').remove(), 100)">
-            <button class="primary">✋ İlgileniyorum</button>
-          </form>
-          <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}">
-            <button>⏭ Geç</button>
-          </form>
-          <form method="post" action="{{ url_for('block') }}">
-            <input type="hidden" name="repo" value="{{ issue.repo }}">
-            <button>🚫 Bu proje olmasın</button>
-          </form>
+  <main>
+    {% if tab == 'hidden' %}
+      <h1>Gizli projeler</h1>
+      {% if hidden_repos %}
+        <div class="list">
+          {% for repo in hidden_repos %}
+            <form method="post" action="{{ url_for('unblock') }}">
+              <span class="mono">{{ repo }}</span>
+              <input type="hidden" name="repo" value="{{ repo }}">
+              <input type="hidden" name="tab" value="hidden">
+              <button class="btn">Tekrar göster</button>
+            </form>
+          {% endfor %}
         </div>
+      {% else %}
+        <div class="empty">Gizlediğin proje yok.</div>
       {% endif %}
-    </article>
-  {% else %}
-    <p class="empty">
-      {% if tab == 'new' %}Şimdilik yeni iş yok. Program taramaya devam ediyor.
-      {% else %}Henüz ilgilendiğin bir iş yok.{% endif %}
-    </p>
-  {% endfor %}
-</main>
+
+    {% else %}
+      <h1>{{ 'Yeni işler' if tab == 'new' else 'İlgilendiklerim' }}</h1>
+
+      {% for issue in issues %}
+        <article>
+          <div class="meta">
+            <span class="repo mono">{{ issue.repo }}</span>
+            <span>{{ issue.stars | stars }} yıldız</span>
+            <span>{{ issue.language | language }}</span>
+            <span>{{ issue.created_at | ago }}</span>
+          </div>
+          <h2><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
+
+          {% if tab == 'new' %}
+            <span class="badge">Kimse almamış</span>
+            <div class="actions">
+              <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
+                    onsubmit="setTimeout(() => location.reload(), 300)">
+                <button class="btn primary">İlgileniyorum</button>
+              </form>
+              <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}">
+                <button class="btn">Geç</button>
+              </form>
+              <form method="post" action="{{ url_for('block') }}">
+                <input type="hidden" name="repo" value="{{ issue.repo }}">
+                <button class="btn quiet">Projeyi gizle</button>
+              </form>
+            </div>
+          {% else %}
+            <div class="actions">
+              <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">GitHub'da aç</a>
+              <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}">
+                <input type="hidden" name="tab" value="interested">
+                <button class="btn">Vazgeç</button>
+              </form>
+            </div>
+          {% endif %}
+        </article>
+      {% else %}
+        <div class="empty">
+          <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" stroke-width="3"/>
+            <circle cx="32" cy="32" r="14" fill="none" stroke="currentColor" stroke-width="3"/>
+            <path d="M32 32 L50.38 13.62" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          {% if tab == 'new' %}
+            <strong>Şimdilik yeni iş yok</strong>
+            <span>Radar taramaya devam ediyor.</span>
+          {% else %}
+            <strong>Henüz bir işe talip olmadın</strong>
+            <span>Yeni işler'de "İlgileniyorum"a bastığın işler burada durur.</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </main>
+</div>
+
+{% if skipped %}
+  <div class="toast" role="status">
+    <span>İş geçildi</span>
+    <form method="post" action="{{ url_for('restore', issue_id=skipped.id) }}">
+      <button>Geri al</button>
+    </form>
+  </div>
+{% elif hidden_repo %}
+  <div class="toast" role="status">
+    <span><span class="mono">{{ hidden_repo }}</span> gizlendi</span>
+    <form method="post" action="{{ url_for('unblock') }}">
+      <input type="hidden" name="repo" value="{{ hidden_repo }}">
+      <button>Geri al</button>
+    </form>
+  </div>
+{% endif %}
+
+<script>
+  // Hide the undo toast after a few seconds and clean the address bar.
+  const toast = document.querySelector(".toast");
+  if (toast) {
+    history.replaceState(null, "", location.pathname);
+    setTimeout(() => toast.remove(), 6000);
+  }
+</script>
 </body>
 </html>
