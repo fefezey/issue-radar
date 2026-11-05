@@ -27,10 +27,49 @@ def _client() -> httpx.Client:
     return httpx.Client(base_url=API_URL, headers=headers, timeout=10)
 
 
+# Phrases people use in comments when they take an issue.
+CLAIM_PHRASES = (
+    "i'd like to work",
+    "i would like to work",
+    "i want to work",
+    "can i work",
+    "could i work",
+    "may i work",
+    "i'll work on",
+    "i will work on",
+    "i'm working on",
+    "i am working on",
+    "assign me",
+    "assign this to me",
+    "can i take",
+    "i'll take",
+    "i will take",
+    "i'd like to take",
+)
+
+
+def _is_claimed(client: httpx.Client, issue: dict) -> bool:
+    """True if someone has said in the comments that they are taking the issue."""
+    if issue["comments"] == 0:
+        return False
+    response = client.get(issue["comments_url"].removeprefix(API_URL))
+    response.raise_for_status()
+    return any(
+        phrase in comment["body"].lower()
+        for comment in response.json()
+        for phrase in CLAIM_PHRASES
+    )
+
+
 def find_issues(language: str, min_stars: int = 100, limit: int = 10) -> list[dict]:
-    """Return the newest open "good first issue"s in the given language,
-    only from repositories with at least `min_stars` stars."""
-    query = f'label:"good first issue" state:open is:issue language:{language}'
+    """Return the newest open "good first issue"s in the given language that
+    nobody has taken yet, only from repositories with at least `min_stars` stars."""
+    # no:assignee  -> nobody is assigned to it
+    # -linked:pr   -> no pull request has been opened for it
+    query = (
+        f'label:"good first issue" state:open is:issue language:{language} '
+        "no:assignee -linked:pr"
+    )
 
     with _client() as client:
         response = client.get(
@@ -50,7 +89,7 @@ def find_issues(language: str, min_stars: int = 100, limit: int = 10) -> list[di
                 repo_info.raise_for_status()
                 stars[repo] = repo_info.json()["stargazers_count"]
 
-            if stars[repo] >= min_stars:
+            if stars[repo] >= min_stars and not _is_claimed(client, issue):
                 issue["repo"] = repo
                 issue["stars"] = stars[repo]
                 issues.append(issue)
