@@ -75,6 +75,18 @@
       gap: 10px;
     }
     .brand { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+    .scan {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .scan::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
+    .scan.busy::before { background: var(--accent); animation: pulse 1s ease-in-out infinite alternate; }
+    .scan.failed::before { background: #F59E0B; }
+    @keyframes pulse { to { opacity: 0.3; } }
 
     .layout {
       max-width: 1100px;
@@ -229,6 +241,7 @@
       <circle cx="40.5" cy="14" r="4" fill="var(--blip)"/>
     </svg>
     <span class="brand">issue radar</span>
+    <span class="scan {{ 'busy' if scanning }} {{ 'failed' if scan_failed }}" role="status">{{ scan_text }}</span>
   </div>
 </header>
 
@@ -309,8 +322,13 @@
             <path d="M32 32 L50.38 13.62" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
           </svg>
           {% if tab == 'new' %}
-            <strong>Şimdilik yeni iş yok</strong>
-            <span>Radar taramaya devam ediyor.</span>
+            {% if scanning %}
+              <strong>GitHub taranıyor</strong>
+              <span>İlk tarama 30-40 saniye sürer. Sayfa kendiliğinden yenilenecek.</span>
+            {% else %}
+              <strong>Şimdilik yeni iş yok</strong>
+              <span>Radar 10 dakikada bir taramaya devam ediyor.</span>
+            {% endif %}
           {% else %}
             <strong>Henüz bir işe talip olmadın</strong>
             <span>Yeni işler'de "İlgileniyorum"a bastığın işler burada durur.</span>
@@ -345,6 +363,9 @@
     history.replaceState(null, "", location.pathname);
     setTimeout(() => toast.remove(), 6000);
   }
+
+  // While a scan is running, check again shortly so new issues show up.
+  {% if scanning %}setTimeout(() => location.reload(), 10000);{% endif %}
 </script>
 </body>
 </html>

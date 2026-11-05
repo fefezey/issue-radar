@@ -3,10 +3,24 @@ from datetime import datetime, timezone
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 from issue_radar import db
+from issue_radar.languages import language_name
+from issue_radar.scanner import status
 
 app = Flask(__name__)
+app.add_template_filter(language_name, "language")
 
 TABS = ("new", "interested", "hidden")
+
+
+def scan_text() -> str:
+    if status["scanning"]:
+        return "İlk tarama yapılıyor…" if status["last_scan"] is None else "Taranıyor…"
+    if status["error"]:
+        return "Son tarama başarısız, tekrar denenecek"
+    if status["last_scan"] is None:
+        return "Tarama bekleniyor"
+    minutes = int((datetime.now(timezone.utc) - status["last_scan"]).total_seconds() // 60)
+    return "Son tarama az önce" if minutes == 0 else f"Son tarama {minutes} dk önce"
 
 
 @app.template_filter("ago")
@@ -24,15 +38,6 @@ def ago(timestamp: str) -> str:
 def stars(count: int) -> str:
     """1234 -> '1.2k'"""
     return f"{count / 1000:.1f}k" if count >= 1000 else str(count)
-
-
-LANGUAGE_NAMES = {"javascript": "JavaScript", "typescript": "TypeScript", "php": "PHP", "c++": "C++"}
-
-
-@app.template_filter("language")
-def language(name: str) -> str:
-    """'javascript' -> 'JavaScript', 'python' -> 'Python'"""
-    return LANGUAGE_NAMES.get(name, name.capitalize())
 
 
 @app.get("/")
@@ -55,6 +60,9 @@ def index():
         hidden_repos=hidden_repos,
         skipped=skipped,
         hidden_repo=request.args.get("undo_repo"),
+        scan_text=scan_text(),
+        scanning=status["scanning"],
+        scan_failed=bool(status["error"]),
     )
 
 
