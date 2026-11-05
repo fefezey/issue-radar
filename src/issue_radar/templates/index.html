@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Issue Radar</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1d2129;
+      --muted: #6b7280;
+      --border: #e3e6ea;
+      --accent: #2563eb;
+      --accent-text: #ffffff;
+      --star: #b7791f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111418;
+        --card: #1a1e24;
+        --text: #e6e8eb;
+        --muted: #9aa3ae;
+        --border: #2a3038;
+        --accent: #3b82f6;
+        --star: #f0b429;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+    h1 { font-size: 22px; margin: 0; }
+    nav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    nav a {
+      padding: 8px 12px;
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    nav a.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+    .count {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-radius: 999px;
+      padding: 0 7px;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+    article {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+    .meta .repo { color: var(--text); font-weight: 600; }
+    .meta .stars { color: var(--star); }
+    h2 { font-size: 16px; margin: 6px 0 12px; overflow-wrap: anywhere; }
+    h2 a { color: inherit; text-decoration: none; }
+    h2 a:hover { text-decoration: underline; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .actions form { margin: 0; }
+    button {
+      font: inherit;
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--muted); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    .empty { color: var(--muted); text-align: center; padding: 48px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>📡 Issue Radar</h1>
+  </header>
+
+  <nav>
+    <a href="{{ url_for('index') }}" class="{{ 'active' if tab == 'new' }}">
+      Yeni işler{% if new_count %}<span class="count">{{ new_count }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('index', tab='interested') }}" class="{{ 'active' if tab == 'interested' }}">
+      İlgilendiklerim
+    </a>
+  </nav>
+
+  {% for issue in issues %}
+    <article>
+      <div class="meta">
+        <span class="repo">{{ issue.repo }}</span>
+        <span class="stars">⭐ {{ issue.stars }}</span>
+        <span>{{ issue.language }}</span>
+        <span>{{ issue.created_at | ago }}</span>
+      </div>
+      <h2><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
+
+      {% if tab == 'new' %}
+        <div class="actions">
+          <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
+                onsubmit="setTimeout(() => this.closest('article').remove(), 100)">
+            <button class="primary">✋ İlgileniyorum</button>
+          </form>
+          <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}">
+            <button>⏭ Geç</button>
+          </form>
+          <form method="post" action="{{ url_for('block') }}">
+            <input type="hidden" name="repo" value="{{ issue.repo }}">
+            <button>🚫 Bu proje olmasın</button>
+          </form>
+        </div>
+      {% endif %}
+    </article>
+  {% else %}
+    <p class="empty">
+      {% if tab == 'new' %}Şimdilik yeni iş yok. Program taramaya devam ediyor.
+      {% else %}Henüz ilgilendiğin bir iş yok.{% endif %}
+    </p>
+  {% endfor %}
+</main>
+</body>
+</html>
