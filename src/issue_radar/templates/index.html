@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -87,6 +87,21 @@
     .scan.busy::before { background: var(--accent); animation: pulse 1s ease-in-out infinite alternate; }
     .scan.failed::before { background: #F59E0B; }
     @keyframes pulse { to { opacity: 0.3; } }
+    .lang { margin: 0; display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .lang button {
+      font: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      min-height: 32px;
+      min-width: 40px;
+      padding: 0 10px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .lang button + button { border-left: 1px solid var(--border); }
+    .lang button[aria-pressed="true"] { background: var(--raised); color: var(--text); }
 
     .layout {
       max-width: 1100px;
@@ -242,25 +257,32 @@
     </svg>
     <span class="brand">issue radar</span>
     <span class="scan {{ 'busy' if scanning }} {{ 'failed' if scan_failed }}" role="status">{{ scan_text }}</span>
+    <form class="lang" method="post" action="{{ url_for('set_language') }}" aria-label="{{ t('language.label') }}">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      {% for code in languages %}
+        <button name="language" value="{{ code }}" aria-pressed="{{ 'true' if code == lang else 'false' }}"
+                title="{{ t('language.name') if code == lang else '' }}" lang="{{ code }}">{{ code | upper }}</button>
+      {% endfor %}
+    </form>
   </div>
 </header>
 
 <div class="layout">
-  <nav aria-label="Bölümler">
+  <nav aria-label="{{ t('nav.label') }}">
     <a href="{{ url_for('index') }}" {% if tab == 'new' %}aria-current="page"{% endif %}>
-      Yeni işler {% if counts.new %}<span class="count new">{{ counts.new }}</span>{% endif %}
+      {{ t('nav.new') }} {% if counts.new %}<span class="count new">{{ counts.new }}</span>{% endif %}
     </a>
     <a href="{{ url_for('index', tab='interested') }}" {% if tab == 'interested' %}aria-current="page"{% endif %}>
-      İlgilendiklerim {% if counts.interested %}<span class="count">{{ counts.interested }}</span>{% endif %}
+      {{ t('nav.interested') }} {% if counts.interested %}<span class="count">{{ counts.interested }}</span>{% endif %}
     </a>
     <a href="{{ url_for('index', tab='hidden') }}" {% if tab == 'hidden' %}aria-current="page"{% endif %}>
-      Gizli projeler {% if counts.hidden %}<span class="count">{{ counts.hidden }}</span>{% endif %}
+      {{ t('nav.hidden') }} {% if counts.hidden %}<span class="count">{{ counts.hidden }}</span>{% endif %}
     </a>
   </nav>
 
   <main>
     {% if tab == 'hidden' %}
-      <h1>Gizli projeler</h1>
+      <h1>{{ t('nav.hidden') }}</h1>
       {% if hidden_repos %}
         <div class="list">
           {% for repo in hidden_repos %}
@@ -268,48 +290,48 @@
               <span class="mono">{{ repo }}</span>
               <input type="hidden" name="repo" value="{{ repo }}">
               <input type="hidden" name="tab" value="hidden">
-              <button class="btn">Tekrar göster</button>
+              <button class="btn">{{ t('action.unhide') }}</button>
             </form>
           {% endfor %}
         </div>
       {% else %}
-        <div class="empty">Gizlediğin proje yok.</div>
+        <div class="empty">{{ t('empty.hidden') }}</div>
       {% endif %}
 
     {% else %}
-      <h1>{{ 'Yeni işler' if tab == 'new' else 'İlgilendiklerim' }}</h1>
+      <h1>{{ t('nav.new') if tab == 'new' else t('nav.interested') }}</h1>
 
       {% for issue in issues %}
         <article>
           <div class="meta">
             <span class="repo mono">{{ issue.repo }}</span>
-            <span>{{ issue.stars | stars }} yıldız</span>
+            <span>{{ issue.stars | stars }}</span>
             <span>{{ issue.language | language }}</span>
             <span>{{ issue.created_at | ago }}</span>
           </div>
-          <h2><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
+          <h2 lang="en"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
 
           {% if tab == 'new' %}
-            <span class="badge">Kimse almamış</span>
+            <span class="badge">{{ t('issue.unclaimed') }}</span>
             <div class="actions">
               <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
                     onsubmit="setTimeout(() => location.reload(), 300)">
-                <button class="btn primary">İlgileniyorum</button>
+                <button class="btn primary">{{ t('action.interested') }}</button>
               </form>
               <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}">
-                <button class="btn">Geç</button>
+                <button class="btn">{{ t('action.skip') }}</button>
               </form>
               <form method="post" action="{{ url_for('block') }}">
                 <input type="hidden" name="repo" value="{{ issue.repo }}">
-                <button class="btn quiet">Projeyi gizle</button>
+                <button class="btn quiet">{{ t('action.hide') }}</button>
               </form>
             </div>
           {% else %}
             <div class="actions">
-              <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">GitHub'da aç</a>
+              <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
               <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}">
                 <input type="hidden" name="tab" value="interested">
-                <button class="btn">Vazgeç</button>
+                <button class="btn">{{ t('action.release') }}</button>
               </form>
             </div>
           {% endif %}
@@ -323,15 +345,15 @@
           </svg>
           {% if tab == 'new' %}
             {% if scanning %}
-              <strong>GitHub taranıyor</strong>
-              <span>İlk tarama 30-40 saniye sürer. Sayfa kendiliğinden yenilenecek.</span>
+              <strong>{{ t('empty.scanning.title') }}</strong>
+              <span>{{ t('empty.scanning.text') }}</span>
             {% else %}
-              <strong>Şimdilik yeni iş yok</strong>
-              <span>Radar 10 dakikada bir taramaya devam ediyor.</span>
+              <strong>{{ t('empty.new.title') }}</strong>
+              <span>{{ t('empty.new.text') }}</span>
             {% endif %}
           {% else %}
-            <strong>Henüz bir işe talip olmadın</strong>
-            <span>Yeni işler'de "İlgileniyorum"a bastığın işler burada durur.</span>
+            <strong>{{ t('empty.interested.title') }}</strong>
+            <span>{{ t('empty.interested.text') }}</span>
           {% endif %}
         </div>
       {% endfor %}
@@ -341,17 +363,17 @@
 
 {% if skipped %}
   <div class="toast" role="status">
-    <span>İş geçildi</span>
+    <span>{{ t('toast.skipped') }}</span>
     <form method="post" action="{{ url_for('restore', issue_id=skipped.id) }}">
-      <button>Geri al</button>
+      <button>{{ t('toast.undo') }}</button>
     </form>
   </div>
 {% elif hidden_repo %}
   <div class="toast" role="status">
-    <span><span class="mono">{{ hidden_repo }}</span> gizlendi</span>
+    <span>{{ t('toast.hidden', repo=hidden_repo) }}</span>
     <form method="post" action="{{ url_for('unblock') }}">
       <input type="hidden" name="repo" value="{{ hidden_repo }}">
-      <button>Geri al</button>
+      <button>{{ t('toast.undo') }}</button>
     </form>
   </div>
 {% endif %}

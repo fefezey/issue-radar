@@ -1,0 +1,49 @@
+{
+  "language.name": "English",
+  "language.label": "Language",
+
+  "nav.label": "Sections",
+  "nav.new": "New issues",
+  "nav.interested": "Interested",
+  "nav.hidden": "Hidden projects",
+
+  "issue.stars.one": "{stars} star",
+  "issue.stars.other": "{stars} stars",
+  "issue.unclaimed": "Nobody has claimed it",
+
+  "action.interested": "I'm interested",
+  "action.skip": "Skip",
+  "action.hide": "Hide project",
+  "action.open": "Open on GitHub",
+  "action.release": "Give up",
+  "action.unhide": "Show again",
+
+  "empty.scanning.title": "Scanning GitHub",
+  "empty.scanning.text": "The first scan takes 30–40 seconds. The page will refresh by itself.",
+  "empty.new.title": "No new issues yet",
+  "empty.new.text": "The radar keeps scanning every 10 minutes.",
+  "empty.interested.title": "You haven't picked an issue yet",
+  "empty.interested.text": "Issues you mark with \"I'm interested\" in New issues show up here.",
+  "empty.hidden": "You haven't hidden any projects.",
+
+  "toast.skipped": "Issue skipped",
+  "toast.hidden": "{repo} hidden",
+  "toast.undo": "Undo",
+
+  "scan.first": "First scan in progress…",
+  "scan.running": "Scanning…",
+  "scan.failed": "Last scan failed, will retry",
+  "scan.waiting": "Waiting to scan",
+  "scan.just_now": "Last scan just now",
+  "scan.minutes.one": "Last scan 1 min ago",
+  "scan.minutes.other": "Last scan {count} min ago",
+
+  "time.minutes.one": "1 min ago",
+  "time.minutes.other": "{count} min ago",
+  "time.hours.one": "1 hour ago",
+  "time.hours.other": "{count} hours ago",
+  "time.days.one": "1 day ago",
+  "time.days.other": "{count} days ago",
+
+  "notify.many": "{count} new issues found"
+}

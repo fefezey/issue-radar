@@ -2,6 +2,7 @@ import subprocess
 import sys
 from collections import Counter
 
+from issue_radar.i18n import translate
 from issue_radar.languages import language_name
 
 
@@ -21,7 +22,7 @@ def notify(title: str, subtitle: str, message: str) -> None:
     subprocess.run(["osascript", "-e", script], check=False)
 
 
-def notify_new_issues(issues: list[dict]) -> None:
+def notify_new_issues(issues: list[dict], lang: str) -> None:
     if len(issues) == 1:
         issue = issues[0]
         notify("Issue Radar", issue["repo"], issue["title"])
@@ -29,4 +30,4 @@ def notify_new_issues(issues: list[dict]) -> None:
 
     by_language = Counter(language_name(issue["language"]) for issue in issues)
     summary = ", ".join(f"{count} {name}" for name, count in by_language.most_common())
-    notify("Issue Radar", f"{len(issues)} yeni iş bulundu", summary)
+    notify("Issue Radar", translate(lang, "notify.many", len(issues)), summary)

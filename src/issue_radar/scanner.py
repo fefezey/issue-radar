@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from issue_radar import db
 from issue_radar.github import find_issues
+from issue_radar.i18n import DEFAULT_LANGUAGE
 from issue_radar.languages import LANGUAGES
 from issue_radar.notify import notify_new_issues
 
@@ -15,10 +16,13 @@ status = {"scanning": False, "last_scan": None, "error": None}
 
 def scan() -> list[dict]:
     """Look for new issues on GitHub, save them and return the ones we hadn't seen."""
+    # Fetch everything first: talking to GitHub takes a while, and we must not
+    # keep the database locked meanwhile, or the web page can't save anything.
+    found = {language: find_issues(language, limit=20) for language in LANGUAGES}
+
     new_issues = []
     with db.connect() as conn:
-        for language in LANGUAGES:
-            issues = find_issues(language, limit=20)
+        for language, issues in found.items():
             for issue in issues:
                 issue["language"] = language
             new_issues += db.save_issues(conn, issues, language)
@@ -48,7 +52,9 @@ def scan_forever() -> None:
 
         can_notify = last_notified is None or time.monotonic() - last_notified >= NOTIFY_INTERVAL
         if pending and can_notify:
-            notify_new_issues(pending)
+            with db.connect() as conn:
+                lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
+            notify_new_issues(pending, lang)
             pending = []
             last_notified = time.monotonic()
 

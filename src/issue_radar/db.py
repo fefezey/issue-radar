@@ -21,13 +21,19 @@ CREATE TABLE IF NOT EXISTS issues (
 CREATE TABLE IF NOT EXISTS blocked_repos (
     repo TEXT PRIMARY KEY
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
 @contextmanager
 def connect():
     DB_PATH.parent.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    # Wait up to 10 s if the scanner is writing at the same moment.
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     try:
@@ -88,6 +94,18 @@ def block_repo(conn: sqlite3.Connection, repo: str) -> None:
 
 def unblock_repo(conn: sqlite3.Connection, repo: str) -> None:
     conn.execute("DELETE FROM blocked_repos WHERE repo = ?", (repo,))
+
+
+def get_setting(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (key, value),
+    )
 
 
 def list_blocked_repos(conn: sqlite3.Connection) -> list[str]:

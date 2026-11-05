@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 
-from flask import Flask, abort, redirect, render_template, request, url_for
+from flask import Flask, abort, g, redirect, render_template, request, url_for
 
 from issue_radar import db
+from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
 from issue_radar.languages import language_name
 from issue_radar.scanner import status
 
@@ -12,32 +13,57 @@ app.add_template_filter(language_name, "language")
 TABS = ("new", "interested", "hidden")
 
 
-def scan_text() -> str:
-    if status["scanning"]:
-        return "İlk tarama yapılıyor…" if status["last_scan"] is None else "Taranıyor…"
-    if status["error"]:
-        return "Son tarama başarısız, tekrar denenecek"
-    if status["last_scan"] is None:
-        return "Tarama bekleniyor"
-    minutes = int((datetime.now(timezone.utc) - status["last_scan"]).total_seconds() // 60)
-    return "Son tarama az önce" if minutes == 0 else f"Son tarama {minutes} dk önce"
+def t(key: str, count: int | None = None, **values) -> str:
+    """Translate into the language of the current page."""
+    return translate(g.lang, key, count, **values)
+
+
+@app.before_request
+def pick_language():
+    """Use the saved language; on the first visit, save the browser's language.
+
+    Saving it also tells the scanner which language to use for notifications.
+    """
+    with db.connect() as conn:
+        lang = db.get_setting(conn, "language")
+        if lang not in available_languages():
+            lang = request.accept_languages.best_match(available_languages()) or DEFAULT_LANGUAGE
+            db.set_setting(conn, "language", lang)
+    g.lang = lang
+
+
+@app.context_processor
+def template_helpers():
+    return {"t": t, "lang": g.lang, "languages": available_languages()}
 
 
 @app.template_filter("ago")
 def ago(timestamp: str) -> str:
-    """'2026-11-05T12:00:00Z' -> '3 saat önce'"""
+    """'2026-11-05T12:00:00Z' -> '3 hours ago'"""
     seconds = (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()
     if seconds < 3600:
-        return f"{max(1, int(seconds // 60))} dk önce"
+        return t("time.minutes", max(1, int(seconds // 60)))
     if seconds < 86400:
-        return f"{int(seconds // 3600)} saat önce"
-    return f"{int(seconds // 86400)} gün önce"
+        return t("time.hours", int(seconds // 3600))
+    return t("time.days", int(seconds // 86400))
 
 
 @app.template_filter("stars")
 def stars(count: int) -> str:
-    """1234 -> '1.2k'"""
-    return f"{count / 1000:.1f}k" if count >= 1000 else str(count)
+    """1234 -> '1.2k stars'"""
+    short = f"{count / 1000:.1f}k" if count >= 1000 else str(count)
+    return t("issue.stars", count, stars=short)
+
+
+def scan_text() -> str:
+    if status["scanning"]:
+        return t("scan.first") if status["last_scan"] is None else t("scan.running")
+    if status["error"]:
+        return t("scan.failed")
+    if status["last_scan"] is None:
+        return t("scan.waiting")
+    minutes = int((datetime.now(timezone.utc) - status["last_scan"]).total_seconds() // 60)
+    return t("scan.just_now") if minutes == 0 else t("scan.minutes", minutes)
 
 
 @app.get("/")
@@ -64,6 +90,16 @@ def index():
         scanning=status["scanning"],
         scan_failed=bool(status["error"]),
     )
+
+
+@app.post("/language")
+def set_language():
+    lang = request.form.get("language")
+    if lang in available_languages():
+        with db.connect() as conn:
+            db.set_setting(conn, "language", lang)
+    tab = request.form.get("tab", "new")
+    return redirect(url_for("index", tab=tab if tab in TABS else "new"))
 
 
 @app.post("/issues/<int:issue_id>/interested")

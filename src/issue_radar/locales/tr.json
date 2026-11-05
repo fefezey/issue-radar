@@ -1,0 +1,44 @@
+{
+  "language.name": "Türkçe",
+  "language.label": "Dil",
+
+  "nav.label": "Bölümler",
+  "nav.new": "Yeni işler",
+  "nav.interested": "İlgilendiklerim",
+  "nav.hidden": "Gizli projeler",
+
+  "issue.stars.other": "{stars} yıldız",
+  "issue.unclaimed": "Kimse almamış",
+
+  "action.interested": "İlgileniyorum",
+  "action.skip": "Geç",
+  "action.hide": "Projeyi gizle",
+  "action.open": "GitHub'da aç",
+  "action.release": "Vazgeç",
+  "action.unhide": "Tekrar göster",
+
+  "empty.scanning.title": "GitHub taranıyor",
+  "empty.scanning.text": "İlk tarama 30-40 saniye sürer. Sayfa kendiliğinden yenilenecek.",
+  "empty.new.title": "Şimdilik yeni iş yok",
+  "empty.new.text": "Radar 10 dakikada bir taramaya devam ediyor.",
+  "empty.interested.title": "Henüz bir işe talip olmadın",
+  "empty.interested.text": "Yeni işler'de \"İlgileniyorum\"a bastığın işler burada durur.",
+  "empty.hidden": "Gizlediğin proje yok.",
+
+  "toast.skipped": "İş geçildi",
+  "toast.hidden": "{repo} gizlendi",
+  "toast.undo": "Geri al",
+
+  "scan.first": "İlk tarama yapılıyor…",
+  "scan.running": "Taranıyor…",
+  "scan.failed": "Son tarama başarısız, tekrar denenecek",
+  "scan.waiting": "Tarama bekleniyor",
+  "scan.just_now": "Son tarama az önce",
+  "scan.minutes.other": "Son tarama {count} dk önce",
+
+  "time.minutes.other": "{count} dk önce",
+  "time.hours.other": "{count} saat önce",
+  "time.days.other": "{count} gün önce",
+
+  "notify.many": "{count} yeni iş bulundu"
+}

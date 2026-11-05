@@ -17,13 +17,14 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this".
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo.
+- 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
 - 🌗 Light and dark theme, following your system.
 
 ### Planned
 
 - [ ] AI summaries in your language, with difficulty and time estimates
 - [ ] A ready-to-post "I'd like to work on this" comment draft
-- [ ] Turkish and English interface
+- [ ] More interface languages — [add yours](#add-a-language)
 - [ ] Settings page (languages, minimum stars, scan interval)
 - [ ] Notifications on Linux and Windows
 - [ ] Telegram and Discord notifications
@@ -90,6 +91,8 @@ src/issue_radar/
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes
 ├── languages.py     which languages to search
+├── i18n.py          translations
+├── locales/         one JSON file per interface language
 └── templates/
     └── index.html   the web page
 ```
@@ -98,11 +101,21 @@ src/issue_radar/
 
 Contributions are welcome — this is a tool for first-time contributors, after all. Good places to start:
 
+- **Add a language** — see below. No coding needed.
 - **Improve claim detection.** `CLAIM_PHRASES` in `github.py` lists the phrases people use to claim an issue. Add the ones you see in the wild.
 - **Linux or Windows notifications.** `notify.py` only supports macOS.
 - **Anything from the [Planned](#planned) list.**
 
 Open an issue first if you plan a bigger change.
+
+### Add a language
+
+1. Copy `src/issue_radar/locales/en.json` to a file named after your language code, for example `de.json`.
+2. Translate the values on the right. Keep the keys on the left and anything in `{curly braces}` as they are.
+3. For words that change with a number, use `.one` and `.other` keys, like `"issue.stars.one": "{stars} star"` and `"issue.stars.other": "{stars} stars"`. If your language doesn't change, `.other` alone is enough.
+4. Run `uv run issue-radar` and pick your language in the top-right corner.
+
+Any key you leave out falls back to English.
 
 ## License
 
