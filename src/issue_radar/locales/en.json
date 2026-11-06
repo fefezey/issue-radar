@@ -105,5 +105,17 @@
   "action.view_pr": "Open your PR",
   "notify.assigned": "You were assigned",
   "notify.merged": "Your pull request was merged!",
-  "notify.taken": "Someone else took an issue you wanted"
+  "notify.taken": "Someone else took an issue you wanted",
+  "action.guide": "Guide",
+  "guide.title": "Where to start",
+  "guide.loading": "Reading the project…",
+  "guide.files": "Files to look at",
+  "guide.files_note": "Found from file and code names in the issue. A good place to start, not a promise.",
+  "guide.files_none": "The issue doesn't name any files or code we could find in the project.",
+  "guide.setup": "Set up",
+  "guide.test": "Run the tests",
+  "guide.commands_none": "We couldn't find setup or test commands in the project's guide. See its",
+  "guide.explanation": "In plain words",
+  "guide.explaining": "The AI is writing an explanation; this can take a few seconds…",
+  "guide.error": "Couldn't read the project from GitHub right now. Try again in a few minutes."
 }

@@ -462,6 +462,21 @@
       resize: vertical;
     }
     .draft-hint.warn { color: var(--medium); font-weight: 500; }
+    .guide { max-height: 80vh; overflow-y: auto; }
+    .guide-part { display: flex; flex-direction: column; gap: 6px; }
+    .guide h3 { margin: 4px 0 0; font-size: 14px; font-weight: 600; }
+    .guide-files { margin: 0; padding-left: 18px; font: 13px/1.7 "Geist Mono", ui-monospace, monospace; overflow-wrap: anywhere; }
+    .guide pre {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font: 13px/1.6 "Geist Mono", ui-monospace, monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .guide-explanation { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-2); }
 
     .toast {
       position: fixed;
@@ -734,6 +749,9 @@
                 {% if not issue.stage %}
                   <button type="button" class="btn" data-draft="{{ issue.id }}">{{ t('action.draft') }}</button>
                 {% endif %}
+                {% if issue.stage != 'merged' %}
+                  <button type="button" class="btn" data-guide="{{ issue.id }}">{{ t('action.guide') }}</button>
+                {% endif %}
               {% endif %}
               <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}" data-action="release">
                 <input type="hidden" name="tab" value="interested">
@@ -833,6 +851,40 @@
   </form>
 </dialog>
 
+{# The issue guide: where to start. Filled in by the script below. #}
+<dialog id="guide" aria-labelledby="guide-title">
+  <form method="dialog" class="draft guide">
+    <h2 id="guide-title">{{ t('guide.title') }}</h2>
+    <p class="draft-issue" lang="en"></p>
+    <p class="hint guide-loading">{{ t('guide.loading') }}</p>
+
+    <section class="guide-part" data-part="files" hidden>
+      <h3>{{ t('guide.files') }}</h3>
+      <ul class="guide-files"></ul>
+      <p class="hint guide-files-note">{{ t('guide.files_note') }}</p>
+      <p class="hint guide-files-none" hidden>{{ t('guide.files_none') }}</p>
+    </section>
+
+    <section class="guide-part" data-part="commands" hidden>
+      <h3>{{ t('guide.setup') }}</h3>
+      <pre class="guide-setup"></pre>
+      <h3>{{ t('guide.test') }}</h3>
+      <pre class="guide-test"></pre>
+      <p class="hint guide-commands-none" hidden>{{ t('guide.commands_none') }} <a class="guide-readme" target="_blank" rel="noopener">README</a></p>
+    </section>
+
+    <section class="guide-part" data-part="explanation" hidden>
+      <h3>{{ t('guide.explanation') }} <span class="summary-label">· {{ t('ai.maybe_wrong') }}</span></h3>
+      <p class="guide-explanation"></p>
+    </section>
+
+    <p class="hint guide-error" hidden>{{ t('guide.error') }}</p>
+    <div class="actions">
+      <button class="btn quiet">{{ t('draft.close') }}</button>
+    </div>
+  </form>
+</dialog>
+
 {% if skipped %}
   <div class="toast" role="status">
     <span>{{ t('toast.skipped') }}</span>
@@ -862,6 +914,7 @@
     "copy": t("draft.copy"),
     "copyAnyway": t("draft.copy_anyway"),
     "copied": t("draft.copied"),
+    "explaining": t("guide.explaining"),
   } | tojson }};
   const UNBLOCK_URL = {{ url_for('unblock') | tojson }};
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1050,9 +1103,76 @@
   });
 
   document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-draft]");
-    if (button) openDraft(button.dataset.draft);
+    const draftButton = event.target.closest("[data-draft]");
+    if (draftButton) openDraft(draftButton.dataset.draft);
+    const guideButton = event.target.closest("[data-guide]");
+    if (guideButton) openGuide(guideButton.dataset.guide);
   });
+
+  // --- Issue guide: facts first, the AI's explanation when it's ready. ---
+  const guideDialog = document.getElementById("guide");
+  const part = (name) => guideDialog.querySelector(`[data-part="${name}"]`);
+
+  function showCommands(selector, lines) {
+    const block = guideDialog.querySelector(selector);
+    block.textContent = lines.join("\n");
+    block.hidden = lines.length === 0;
+    block.previousElementSibling.hidden = lines.length === 0;  // its heading
+  }
+
+  async function openGuide(issueId) {
+    for (const section of guideDialog.querySelectorAll(".guide-part, .guide-error")) section.hidden = true;
+    guideDialog.querySelector(".guide-loading").hidden = false;
+    guideDialog.querySelector(".draft-issue").textContent = "";
+    guideDialog.showModal();
+
+    let data;
+    try {
+      const response = await fetch(`/issues/${issueId}/guide`);
+      data = await response.json();
+      if (!response.ok) throw new Error();
+    } catch {
+      guideDialog.querySelector(".guide-loading").hidden = true;
+      guideDialog.querySelector(".guide-error").hidden = false;
+      return;
+    }
+    guideDialog.querySelector(".guide-loading").hidden = true;
+    guideDialog.querySelector(".draft-issue").textContent = data.title;
+
+    const list = guideDialog.querySelector(".guide-files");
+    list.replaceChildren(...data.files.map((file) => {
+      const item = document.createElement("li");
+      const link = Object.assign(document.createElement("a"), { href: file.url, target: "_blank", rel: "noopener", textContent: file.path });
+      item.append(link);
+      return item;
+    }));
+    guideDialog.querySelector(".guide-files-note").hidden = data.files.length === 0;
+    guideDialog.querySelector(".guide-files-none").hidden = data.files.length > 0;
+    part("files").hidden = false;
+
+    showCommands(".guide-setup", data.commands.setup);
+    showCommands(".guide-test", data.commands.test);
+    const noCommands = data.commands.setup.length + data.commands.test.length === 0;
+    guideDialog.querySelector(".guide-commands-none").hidden = !noCommands;
+    guideDialog.querySelector(".guide-readme").href = data.readme_url;
+    part("commands").hidden = false;
+
+    const explanation = guideDialog.querySelector(".guide-explanation");
+    if (data.explanation) {
+      explanation.textContent = data.explanation;
+      part("explanation").hidden = false;
+    } else if (data.ai_on) {
+      explanation.textContent = TEXT.explaining;
+      part("explanation").hidden = false;
+      try {
+        const answer = await (await post(`/issues/${issueId}/explain`)).json();
+        if (answer.explanation) explanation.textContent = answer.explanation;
+        else part("explanation").hidden = true;
+      } catch {
+        part("explanation").hidden = true;
+      }
+    }
+  }
 
   // --- Toast and notice that came with the page (when JavaScript was off for the action). ---
   const pageToast = document.querySelector(".toast");

@@ -197,3 +197,40 @@ def summarize_forever() -> None:
 def failed_ids() -> set[int]:
     """Issues whose summary failed; the page stops saying "in progress" for them."""
     return set(_failed)
+
+
+_EXPLAIN_INSTRUCTIONS = """\
+Explain this GitHub issue to someone making their first open-source contribution.
+Write 3 or 4 short sentences in {language}, in plain words: what is wrong or
+missing, why it matters for the project, and what a fix probably involves.
+{address} Only use what the issue says; if something isn't clear from the
+issue, say so instead of guessing. Keep code names as they are, in `backticks`.
+Answer in JSON with one field: "explanation".
+"""
+
+
+def explain(title: str, body: str, repo: str, about: str, lang: str) -> str:
+    """A plain explanation of the issue for the issue guide; "" if it didn't work out."""
+    language = _LANGUAGE_NAMES.get(lang, "English")
+    instructions = _EXPLAIN_INSTRUCTIONS.format(language=language, address=_ADDRESS.get(lang, _ADDRESS["en"]))
+    response = httpx.post(
+        f"{OLLAMA_URL}/api/chat",
+        json={
+            "model": MODEL,
+            "stream": False,
+            "format": {"type": "object", "properties": {"explanation": {"type": "string"}}, "required": ["explanation"]},
+            "keep_alive": KEEP_LOADED,
+            "options": {"temperature": 0.2, "num_ctx": CONTEXT_SIZE},
+            "messages": [
+                {"role": "system", "content": instructions},
+                {
+                    "role": "user",
+                    "content": f"Repository: {repo}\nAbout the project: {about}\nTitle: {title}\n\n{body[:BODY_LIMIT]}",
+                },
+            ],
+        },
+        timeout=300,
+    )
+    response.raise_for_status()
+    text = str(json.loads(response.json()["message"]["content"]).get("explanation", "")).strip()
+    return text if _in_language(text, lang) else ""

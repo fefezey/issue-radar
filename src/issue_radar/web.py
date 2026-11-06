@@ -1,6 +1,8 @@
 import json
 import re
+import time
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import httpx
 from flask import Flask, abort, g, redirect, render_template, request, url_for
@@ -8,7 +10,8 @@ from markupsafe import Markup, escape
 
 from issue_radar import ai, db, settings
 from issue_radar.claiming import DRAFT, PLAN_PLACEHOLDER, policy_from_guide
-from issue_radar.github import contributing_guide
+from issue_radar.github import contributing_guide, file_tree, readme
+from issue_radar.guide import find_commands, find_files, name_candidates
 from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
 from issue_radar.kinds import kind_of
 from issue_radar.languages import SUPPORTED_LANGUAGES, language_name
@@ -227,6 +230,69 @@ def draft(issue_id: int):
         "placeholder": PLAN_PLACEHOLDER,
         "policy": policy,
     }
+
+
+PROJECT_FILES_MAX_AGE = 24 * 60 * 60  # seconds to keep a project's README, guide and file list
+_project_files: dict[str, tuple[float, str, str, list[str]]] = {}
+
+
+def _project(repo: str) -> tuple[str, str, list[str]]:
+    """A project's contributing guide, README and file list, kept for a day."""
+    saved = _project_files.get(repo)
+    if saved and time.time() - saved[0] < PROJECT_FILES_MAX_AGE:
+        return saved[1], saved[2], saved[3]
+    guide_text, readme_text, tree = contributing_guide(repo), readme(repo), file_tree(repo)
+    _project_files[repo] = (time.time(), guide_text, readme_text, tree)
+    return guide_text, readme_text, tree
+
+
+@app.get("/issues/<int:issue_id>/guide")
+def issue_guide(issue_id: int):
+    """Where to start: commands to set up and test the project, and files
+    named in the issue that exist in the project. Facts, no AI."""
+    with db.connect() as conn:
+        issue = db.get_issue(conn, issue_id)
+    if issue is None:
+        abort(404)
+    repo = issue["repo"]
+    try:
+        guide_text, readme_text, tree = _project(repo)
+    except httpx.HTTPError:
+        return {"error": True}, 502
+    paths, identifiers = name_candidates(issue["title"], issue["body"] or "")
+    return {
+        "title": issue["title"],
+        "commands": find_commands(guide_text, readme_text),
+        "files": [
+            {"path": path, "url": f"https://github.com/{repo}/blob/HEAD/{quote(path)}"}
+            for path in find_files(tree, paths, identifiers)
+        ],
+        "readme_url": f"https://github.com/{repo}#readme",
+        "explanation": issue["explanation"] if issue["explanation_lang"] == g.lang else None,
+        "ai_on": ai.status["available"],
+    }
+
+
+@app.post("/issues/<int:issue_id>/explain")
+def explain_issue(issue_id: int):
+    """The guide's plain explanation, made by the local AI model once and kept."""
+    with db.connect() as conn:
+        issue = db.get_issue(conn, issue_id)
+        repo = db.load_repo_info(conn).get(issue["repo"]) if issue else None
+    if issue is None:
+        abort(404)
+    if issue["explanation"] and issue["explanation_lang"] == g.lang:
+        return {"explanation": issue["explanation"]}
+    if not ai.status["available"]:
+        return {"explanation": None}
+    try:
+        text = ai.explain(issue["title"], issue["body"] or "", issue["repo"], repo["description"] if repo else "", g.lang)
+    except (httpx.HTTPError, ValueError, KeyError):
+        return {"explanation": None}
+    if text:
+        with db.connect() as conn:
+            db.save_explanation(conn, issue_id, text, g.lang)
+    return {"explanation": text or None}
 
 
 @app.post("/issues/<int:issue_id>/skip")

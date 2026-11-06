@@ -23,7 +23,8 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
 - ✍️ **Claim it** — *Interested* opens a ready-to-post comment ("I'd like to work on this… could you assign it to me?") with a line for your own plan, and a button that copies it and opens the issue. If the project's contributing guide says not to ask first, you're told so.
-- 🧗 **Follow your progress** — for issues you're interested in, Issue Radar reads GitHub on every scan and shows where you are: *Commented → Assigned → PR opened → Merged*, with the next step (including the `Fixes #123` line that links your pull request). A Mac notification tells you when you're assigned, when your pull request is merged, or when someone else takes an issue you wanted.
+- 🧗 **Follow your progress** — for issues you're interested in, Issue Radar reads GitHub on every scan and shows where you are: *Commented → Assigned → PR opened → Merged*, with the next step (including the `Fixes #123` line that links your pull request).
+- 🗺️ **Where to start** — a guide for each issue you're interested in: the files named in the issue that really exist in the project (with links), the project's setup and test commands from its contributing guide and README, and a plain explanation written by the local AI. A Mac notification tells you when you're assigned, when your pull request is merged, or when someone else takes an issue you wanted.
 - ⚙️ **Settings page** — pick the languages to search and the minimum stars.
 - 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
 - 🌗 Light and dark theme, following your system.
@@ -119,6 +120,7 @@ src/issue_radar/
 ├── ai.py            AI summaries through Ollama
 ├── kinds.py         spots docs, test and translation issues
 ├── claiming.py      the comment draft, and reading contributing guides
+├── guide.py         the issue guide: setup and test commands, files to look at
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes

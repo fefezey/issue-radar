@@ -340,3 +340,21 @@ def track_issues(urls: dict[int, str]) -> dict[int, dict]:
             stage, pr = None, None
         progress[issue_id] = {"stage": stage, "pr_url": pr["url"] if pr else None}
     return progress
+
+
+def readme(repo: str) -> str:
+    """The project's README, or "" if it has none."""
+    with _client() as client:
+        response = client.get(f"/repos/{repo}/readme", headers={"Accept": "application/vnd.github.raw"})
+        if response.status_code == 404:
+            return ""
+        response.raise_for_status()
+        return response.text
+
+
+def file_tree(repo: str) -> list[str]:
+    """Every file path in the project's default branch (GitHub may cut very large ones short)."""
+    with _client() as client:
+        response = client.get(f"/repos/{repo}/git/trees/HEAD", params={"recursive": 1})
+        response.raise_for_status()
+        return [item["path"] for item in response.json().get("tree", []) if item.get("type") == "blob"]

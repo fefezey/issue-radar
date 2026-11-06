@@ -94,5 +94,17 @@
   "action.view_pr": "PR'ını aç",
   "notify.assigned": "Bu işe atandın",
   "notify.merged": "PR'ın birleşti!",
-  "notify.taken": "İlgilendiğin işi başkası aldı"
+  "notify.taken": "İlgilendiğin işi başkası aldı",
+  "action.guide": "Rehber",
+  "guide.title": "Nereden başlamalı",
+  "guide.loading": "Proje okunuyor…",
+  "guide.files": "Bakılacak dosyalar",
+  "guide.files_note": "İşte geçen dosya ve kod adlarından bulundu. Başlamak için iyi bir yer; kesin değil.",
+  "guide.files_none": "İşte, projede bulabildiğimiz bir dosya ya da kod adı geçmiyor.",
+  "guide.setup": "Kurulum",
+  "guide.test": "Testleri çalıştır",
+  "guide.commands_none": "Projenin rehberinde kurulum ya da test komutu bulamadık. Şuna bak:",
+  "guide.explanation": "Sade anlatım",
+  "guide.explaining": "Yapay zeka bir açıklama yazıyor; birkaç saniye sürebilir…",
+  "guide.error": "Proje şu an GitHub'dan okunamadı. Birkaç dakika sonra tekrar dene."
 }

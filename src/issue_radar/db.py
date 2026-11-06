@@ -59,6 +59,8 @@ ADDED_ISSUE_COLUMNS = {
     "stage": "TEXT",  # for interested issues: commented | assigned | pr_open | merged
     "stage_changed_at": "TEXT",
     "pr_url": "TEXT",  # your pull request for it, if any
+    "explanation": "TEXT",  # the issue guide's plain explanation (AI), once made
+    "explanation_lang": "TEXT",
 }
 
 # Issues that are no longer free on GitHub are dropped from "new".
@@ -237,6 +239,10 @@ def save_summary(
         """,
         (summary, lang, version, issue_id),
     )
+
+
+def save_explanation(conn: sqlite3.Connection, issue_id: int, text: str, lang: str) -> None:
+    conn.execute("UPDATE issues SET explanation = ?, explanation_lang = ? WHERE id = ?", (text, lang, issue_id))
 
 
 def set_status(conn: sqlite3.Connection, issue_id: int, status: str) -> None:
