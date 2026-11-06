@@ -17,6 +17,8 @@ It scans GitHub for new issues, filters out tasks that are already claimed, and 
 
 Everything runs locally on your Mac. Your data and preferences stay on your computer.
 
+<p align="center"><img src="assets/screenshot.png" alt="Issue Radar showing new issues grouped by project, with AI summaries" width="800"></p>
+
 ## What it does
 
 Issue Radar finds beginner-friendly issues in the languages you follow and drops the ones someone has already claimed. On first run it picks those languages itself, by looking at your GitHub account. Next to every issue you see what the project is about and whether it actually merges pull requests from outside the team, so you don't put work into a project that never answers.

@@ -38,6 +38,8 @@ def test_every_page_opens(client, language, tab):
 
 
 def test_new_issues_are_grouped_by_project(client):
+    with db.connect() as conn:
+        db.set_setting(conn, "language", "tr")  # the summary is in Turkish
     page = client.get("/").get_data(as_text=True)
     assert page.count('<section class="project"') == 1  # owner/project; other/repo's issue is in Interested
     assert "<details class=\"more\">" in page
@@ -156,3 +158,9 @@ def test_first_run_picks_languages_only_once(monkeypatch):
     scanner.pick_languages_on_first_run()
     with db.connect() as conn:
         assert settings.search_languages(conn) == ["rust"]
+
+
+def test_summaries_in_another_language_are_not_shown(client):
+    with db.connect() as conn:
+        db.set_setting(conn, "language", "en")
+    assert "<code>a.py</code>" not in client.get("/").get_data(as_text=True)

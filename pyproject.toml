@@ -1,6 +1,6 @@
 [project]
 name = "issue-radar"
-version = "0.1.0"
+version = "1.0.0"
 description = "Find new, unclaimed good first issues on GitHub and get notified."
 readme = "README.md"
 authors = [

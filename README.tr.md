@@ -17,6 +17,8 @@ GitHub'ı yeni işler için tarar, başkasının çoktan aldığı işleri ayık
 
 Her şey kendi Mac'inde çalışır. Verilerin ve tercihlerin bilgisayarında kalır.
 
+<p align="center"><img src="assets/screenshot.tr.png" alt="Issue Radar, yeni işleri projelere göre gruplanmış ve yapay zeka özetleriyle gösteriyor" width="800"></p>
+
 ## Neler yapıyor
 
 Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve başkasının çoktan aldığı işleri ayıklar. Dilleri ilk açılışta senin GitHub hesabına bakarak kendisi seçer. Her işin yanında projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini görürsün, böylece cevap vermeyen bir projeye boşuna emek harcamazsın.

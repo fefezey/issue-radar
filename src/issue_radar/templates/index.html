@@ -751,12 +751,14 @@
             </p>
           {% endif %}
 
-          {% if issue.summary %}
+          {# A summary in another language is being rewritten; don't show it meanwhile. #}
+          {% set summary_ready = issue.summary_lang == lang %}
+          {% if issue.summary and summary_ready %}
             <div class="summary">
               <span class="summary-label">{{ t('ai.label') }} · <span title="{{ t('ai.note') }}">{{ t('ai.maybe_wrong') }}</span></span>
               <p lang="{{ issue.summary_lang }}">{{ issue.summary | code }}</p>
             </div>
-          {% elif issue.summary is none and ai_on and issue.id not in ai_failed %}
+          {% elif (issue.summary is none or not summary_ready) and ai_on and issue.id not in ai_failed %}
             <p class="summary pending">{{ t('ai.pending') }}</p>
           {% endif %}
 
