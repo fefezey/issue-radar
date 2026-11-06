@@ -25,7 +25,7 @@ Issue Radar finds beginner-friendly issues in the languages you follow and drops
 
 If you have a local AI running, it summarizes issues and translates their titles into your language. When you decide to take an issue, it gives you a ready-made comment, the files worth looking at, and the project's setup and test commands. If you write your comment in another language, one click translates it into English. After that it follows your progress from your first comment to your merged pull request, and lets you know on your Mac when something important happens.
 
-Later on we'd like to add more interface languages ([you can add yours](#add-a-language)), support notifications on Linux and Windows, and send them through Telegram or Discord.
+Later on we'd like to add more interface languages ([you can add yours](#add-a-language)), support notifications on Windows, and send them through Telegram or Discord.
 
 ## How it works
 
@@ -85,7 +85,7 @@ Without signing in, GitHub allows only 60 requests an hour, which isn't enough. 
 
 ### Notifications
 
-Notifications show Issue Radar's name and radar icon. To make that work, it builds a tiny helper app in `~/.issue-radar/` the first time it notifies you. If you're curious what they look like, press **Send a test notification** on the Settings page. If nothing shows up, allow notifications for Issue Radar in the Notifications section of System Settings.
+Notifications show Issue Radar's name and radar icon. To make that work, it builds a tiny helper app in `~/.issue-radar/` the first time it notifies you. If you're curious what they look like, press **Send a test notification** on the Settings page. If nothing shows up, allow notifications for Issue Radar in the Notifications section of System Settings. On Linux, notifications go through `notify-send`, which most desktops already have.
 
 ## Configuration
 
@@ -109,7 +109,7 @@ Data is kept in a local SQLite database through `db.py`. The web page's addresse
 
 Contributions are welcome; after all, this is a tool for people making their first ones. The easiest place to start is adding a language to the interface. You don't need to know how to code for that, and it's explained below.
 
-If you'd like to touch some code, have a look at `CLAIM_PHRASES` in `github.py`. It holds the sentences people write when they take an issue, and you can add new ones you come across. `kinds.py` tries to recognize easy issues from their titles and labels, so if you see one it missed or got wrong, you can fix the rules. `notify.py` only works on macOS for now, and adding Linux or Windows support would be a great contribution too. If you're thinking of a bigger change, please open an issue first so we can talk about it.
+If you'd like to touch some code, have a look at `CLAIM_PHRASES` in `github.py`. It holds the sentences people write when they take an issue, and you can add new ones you come across. `kinds.py` tries to recognize easy issues from their titles and labels, so if you see one it missed or got wrong, you can fix the rules. `notify.py` works on macOS and Linux for now, and adding Windows support would be a great contribution too. If you're thinking of a bigger change, please open an issue first so we can talk about it.
 
 ### Run the tests
 

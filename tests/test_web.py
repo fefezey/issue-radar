@@ -181,3 +181,14 @@ def test_project_shows_how_fast_the_team_answers(client, hours, text):
         db.save_repo_info(conn, "owner/project", {"stars": 500, "description": "", "outside_merged": 3, "response_hours": hours})
     page = client.get("/").get_data(as_text=True)
     assert (text in page) == (hours is not None)
+
+
+def test_linux_notifications_use_notify_send(monkeypatch):
+    from issue_radar import notify
+
+    ran = []
+    monkeypatch.setattr(notify.sys, "platform", "linux")
+    monkeypatch.setattr(notify.shutil, "which", lambda name: "/usr/bin/notify-send")
+    monkeypatch.setattr(notify.subprocess, "run", lambda args, **kwargs: ran.append(args))
+    notify.notify("Issue Radar", "owner/repo", "Fix a typo")
+    assert ran == [["notify-send", "--app-name=Issue Radar", "Issue Radar", "owner/repo\nFix a typo"]]

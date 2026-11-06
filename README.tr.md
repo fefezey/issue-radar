@@ -25,7 +25,7 @@ Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve b
 
 Bilgisayarında çalışan bir yapay zeka varsa işleri özetler ve başlıklarını senin diline çevirir. Bir işi almaya karar verdiğinde sana hazır bir yorum taslağı, bakman gereken dosyaları ve projenin kurulum ve test komutlarını gösterir. Yorumunu Türkçe yazarsan tek tuşla İngilizceye çevirebilirsin. Sonra ilk yorumundan PR'ının birleşmesine kadar ilerlemeni takip eder ve önemli bir şey olduğunda Mac'inde haber verir.
 
-İleride daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Linux ve Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
+İleride daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
 
 ## Nasıl çalışıyor
 
@@ -85,7 +85,7 @@ GitHub, giriş yapmadan saatte yalnızca 60 isteğe izin veriyor ve bu yetmiyor.
 
 ### Bildirimler
 
-Bildirimler Issue Radar adı ve radar logosuyla gelir. Program bunun için ilk bildirimde `~/.issue-radar/` klasöründe küçük bir yardımcı uygulama oluşturur. Nasıl göründüğünü merak ediyorsan Ayarlar sayfasındaki **Deneme bildirimi gönder** düğmesine bas. Hiçbir şey görmüyorsan Sistem Ayarları'ndaki Bildirimler bölümünden Issue Radar'a izin vermen gerekiyor.
+Bildirimler Issue Radar adı ve radar logosuyla gelir. Program bunun için ilk bildirimde `~/.issue-radar/` klasöründe küçük bir yardımcı uygulama oluşturur. Nasıl göründüğünü merak ediyorsan Ayarlar sayfasındaki **Deneme bildirimi gönder** düğmesine bas. Hiçbir şey görmüyorsan Sistem Ayarları'ndaki Bildirimler bölümünden Issue Radar'a izin vermen gerekiyor. Linux'ta bildirimler, çoğu masaüstünde zaten kurulu olan `notify-send` ile gösterilir.
 
 ## Ayarlar
 
@@ -109,7 +109,7 @@ Veriler `db.py` ile yerel bir SQLite veritabanında tutulur. Web sayfasının ad
 
 Katkılarını bekliyoruz; ne de olsa bu, ilk katkısını yapacaklar için yapılmış bir araç. Başlamak için en kolay yol arayüze yeni bir dil eklemek. Bunun için kod bilmen gerekmiyor, nasıl yapılacağı aşağıda anlatılıyor.
 
-Biraz kodla uğraşmak istersen `github.py` içindeki `CLAIM_PHRASES` listesine bakabilirsin. Bu liste, insanların bir işi alırken yazdığı cümleleri tutuyor; karşına çıkan yeni kalıpları ekleyebilirsin. `kinds.py` da başlıklardan ve etiketlerden kolay işleri tanımaya çalışıyor. Kaçırdığı ya da yanlış tanıdığı bir iş görürsen kuralları düzeltebilirsin. `notify.py` şimdilik yalnızca macOS'ta çalışıyor, Linux ya da Windows desteği eklemek de güzel bir katkı olur. Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
+Biraz kodla uğraşmak istersen `github.py` içindeki `CLAIM_PHRASES` listesine bakabilirsin. Bu liste, insanların bir işi alırken yazdığı cümleleri tutuyor; karşına çıkan yeni kalıpları ekleyebilirsin. `kinds.py` da başlıklardan ve etiketlerden kolay işleri tanımaya çalışıyor. Kaçırdığı ya da yanlış tanıdığı bir iş görürsen kuralları düzeltebilirsin. `notify.py` şimdilik macOS ve Linux'ta çalışıyor, Windows desteği eklemek de güzel bir katkı olur. Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
 
 ### Testleri çalıştır
 

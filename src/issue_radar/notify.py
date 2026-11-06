@@ -1,4 +1,4 @@
-"""Mac notifications, shown with Issue Radar's own name and radar icon.
+"""Notifications: on a Mac with Issue Radar's own name and radar icon, on Linux through notify-send.
 
 macOS shows a notification with the icon of the app that sent it. A plain
 `osascript` notification comes from "Script Editor", so on first use we
@@ -82,7 +82,12 @@ def _notifier_app() -> Path | None:
 
 
 def notify(title: str, subtitle: str, message: str) -> None:
-    """Show a macOS notification. Does nothing on other systems."""
+    """Show a notification on macOS, or on Linux with notify-send.
+    Does nothing on other systems."""
+    if sys.platform.startswith("linux"):
+        if shutil.which("notify-send"):
+            subprocess.run(["notify-send", "--app-name=Issue Radar", title, f"{subtitle}\n{message}"], timeout=30)
+        return
     if sys.platform != "darwin":
         return
     app = _notifier_app()

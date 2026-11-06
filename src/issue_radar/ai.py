@@ -8,6 +8,7 @@ environment variable (default: gemma3:4b).
 import json
 import os
 import re
+import unicodedata
 import threading
 
 import httpx
@@ -216,6 +217,19 @@ _TRANSLATE_ADDRESS = {
 
 # Tags some projects put before titles: "[Bug] ", "[Good First Issue]: ".
 _TITLE_TAGS = re.compile(r"^(?:\s*\[[^\]]{1,40}\]:?)+\s*")
+# Beginner labels repeated at the end: "(good-first-issue)", "(Hacktoberfest)".
+_TITLE_LABELS = re.compile(
+    r"\s*\((?:good[ -]first[ -]issue|first[ -]timers?[ -]only|beginner(?:[ -]friendly)?|help[ -]wanted|hacktoberfest)\)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _clean_title(title: str) -> str:
+    """The words of a title without tags, labels and emoji, which the model
+    tends to translate too ("🐉" -> "Dragon"). The original title keeps them."""
+    text = _TITLE_LABELS.sub("", _TITLE_TAGS.sub("", title))
+    text = "".join(c for c in text if unicodedata.category(c) not in ("So", "Cf") and c not in "\ufe0e\ufe0f")
+    return re.sub(r"\s{2,}", " ", text).strip() or title
 
 
 def needs_translation(text: str, lang: str) -> bool:
@@ -234,7 +248,7 @@ def translate(text: str, kind: str, lang: str) -> str:
     language = _LANGUAGE_NAMES.get(lang, "English")
     instructions = _TRANSLATE_INSTRUCTIONS.format(kind=kind, language=language, address=_TRANSLATE_ADDRESS.get(lang, ""))
     if "title" in kind:
-        text = _TITLE_TAGS.sub("", text) or text  # the tags are noise; the original title keeps them
+        text = _clean_title(text)
     response = httpx.post(
         f"{OLLAMA_URL}/api/chat",
         json={

@@ -204,7 +204,8 @@ def scan_forever() -> None:
             pending += new_issues
             if new_issues:
                 ai.wake.set()  # summarize them now
-            if not error:
+            # A paused search doesn't stop the rest: it uses GitHub's other limits.
+            if not error or (status["has_token"] and _error_kind(error) == "rate_limit"):
                 time.sleep(SEARCH_PAUSE)
                 recheck()
                 track()

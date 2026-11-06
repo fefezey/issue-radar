@@ -859,7 +859,7 @@
                   <p class="signal">{{ t('signal.answers_same_day') }}</p>
                 {% else %}
                   {% set days = (info.response_hours / 24) | round | int %}
-                  <p class="signal {% if days > 7 %}none{% endif %}">{{ t('signal.answers_in_days', days, days=days) }}</p>
+                  <p class="signal{% if days > 7 %} none{% endif %}">{{ t('signal.answers_in_days', days, days=days) }}</p>
                 {% endif %}
               {% endif %}
             </div>

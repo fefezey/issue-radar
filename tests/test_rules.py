@@ -107,3 +107,15 @@ def test_translation_drops_title_tags_and_bad_answers(monkeypatch):
     assert ai.translate("[Beginner]: Add unit tests", "GitHub issue title", "tr") == "Birim testlerini ekle"
     assert sent[0] == "Add unit tests"  # the "[Beginner]:" tag isn't sent
     assert ai.translate("Add unit tests", "GitHub issue title", "tr") == ""  # still English: thrown away
+
+
+def test_titles_are_cleaned_before_translating():
+    from issue_radar.ai import _clean_title
+
+    assert _clean_title("[good first issue, hacktoberfest] 🐉 Add new Japanese Proverb 708 (good-first-issue)") == (
+        "Add new Japanese Proverb 708"
+    )
+    assert _clean_title("Fix ❤️ button in `README` (Hacktoberfest)") == "Fix button in `README`"
+    assert _clean_title("Support (optional) config") == "Support (optional) config"  # not a label
+    assert _clean_title("नया पेज जोड़ें") == "नया पेज जोड़ें"  # vowel signs stay
+    assert _clean_title("🐞") == "🐞"
