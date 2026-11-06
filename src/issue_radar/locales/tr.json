@@ -1,48 +1,38 @@
 {
   "language.name": "Türkçe",
   "language.label": "Dil",
-
   "nav.label": "Bölümler",
   "nav.new": "Yeni işler",
   "nav.interested": "İlgilendiklerim",
   "nav.hidden": "Gizli projeler",
-
   "issue.stars.other": "{stars} yıldız",
-  "issue.unclaimed": "Kimse almamış",
   "issue.contributed_before.other": "Daha önce {count} PR açtın",
-
   "action.interested": "İlgileniyorum",
   "action.skip": "Geç",
   "action.hide": "Projeyi gizle",
   "action.open": "GitHub'da aç",
   "action.release": "Vazgeç",
   "action.unhide": "Tekrar göster",
-
   "empty.scanning.title": "GitHub taranıyor",
-  "empty.scanning.text": "İlk tarama 30-40 saniye sürer. Sayfa kendiliğinden yenilenecek.",
+  "empty.scanning.text": "İlk tarama yaklaşık 1 dakika sürebilir. Sayfa kendiliğinden yenilenecek.",
   "empty.new.title": "Şimdilik yeni iş yok",
   "empty.new.text": "Radar 10 dakikada bir taramaya devam ediyor.",
-  "empty.interested.title": "Henüz bir işe talip olmadın",
+  "empty.interested.title": "Henüz ilgilendiğin bir iş yok",
   "empty.interested.text": "Yeni işler'de \"İlgileniyorum\"a bastığın işler burada durur.",
   "empty.hidden": "Gizlediğin proje yok.",
-
   "toast.skipped": "İş geçildi",
   "toast.hidden": "{repo} gizlendi",
   "toast.undo": "Geri al",
-
   "scan.first": "İlk tarama yapılıyor…",
   "scan.running": "Taranıyor…",
   "scan.failed": "Son tarama başarısız, tekrar denenecek",
   "scan.waiting": "Tarama bekleniyor",
   "scan.just_now": "Son tarama az önce",
   "scan.minutes.other": "Son tarama {count} dk önce",
-
   "time.minutes.other": "{count} dk önce",
   "time.hours.other": "{count} saat önce",
   "time.days.other": "{count} gün önce",
-
   "notify.many": "{count} yeni iş bulundu",
-
   "nav.settings": "Ayarlar",
   "settings.languages.title": "Taranacak diller",
   "settings.languages.hint": "Bu dillerde yazılmış projelerin işlerini görürsün.",
@@ -52,7 +42,6 @@
   "settings.save": "Kaydet",
   "settings.saved": "Ayarlar kaydedildi ve liste güncellendi. Yeni tarama en geç 1 dakika içinde başlayacak.",
   "settings.error.no_language": "En az bir dil seç.",
-
   "difficulty.easy": "Kolay",
   "difficulty.medium": "Orta",
   "difficulty.hard": "Zor",
@@ -62,5 +51,18 @@
   "effort.over_1d": "1 günden fazla",
   "ai.label": "Yapay zeka özeti",
   "ai.note": "Bilgisayarındaki bir yapay zeka modeli yazdı. Yanılabilir; başlamadan önce işin kendisini oku.",
-  "ai.pending": "Özet hazırlanıyor…"
+  "ai.pending": "Özet hazırlanıyor…",
+  "new.subtitle": "Kimsenin almadığı işler; her taramada yeniden kontrol ediliyor.",
+  "issue.taken": "Artık başkası alıyor",
+  "issue.closed": "Kapandı",
+  "toast.interested": "İlgilendiklerim'e eklendi. İşi almak için GitHub'da yorum yaz.",
+  "toast.released": "Yeni işlere geri kondu",
+  "error.no_token.title": "GitHub'a giriş yapmamışsın.",
+  "error.no_token.text": "Giriş yapmadan GitHub saatte yalnızca 60 isteğe izin veriyor; bu bir tarama için yetmez. Terminalde şunu çalıştır ya da GITHUB_TOKEN ayarla:",
+  "error.rate_limit": "GitHub aramalarımıza birkaç dakikalığına ara verdi. Saat {time} civarında tekrar denenecek.",
+  "error.other": "Son tarama başarısız oldu. Saat {time} civarında tekrar denenecek.",
+  "settings.ai.title": "Yapay zeka özetleri",
+  "settings.ai.on": "Açık. {model} modeli bilgisayarında çalışıyor.",
+  "settings.ai.no_model": "Kapalı. Ollama çalışıyor ama {model} modeli kurulu değil. Şunu çalıştır:",
+  "settings.ai.no_ollama": "Kapalı. Açmak için Ollama'yı ve modeli kur (yaklaşık 3 GB, ücretsiz):"
 }

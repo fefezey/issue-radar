@@ -3,7 +3,9 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from issue_radar import ai, db, settings
-from issue_radar.github import contributed_repos, find_issues
+import httpx
+
+from issue_radar.github import check_issues, contributed_repos, find_issues, has_token
 from issue_radar.i18n import DEFAULT_LANGUAGE
 from issue_radar.notify import notify_new_issues
 
@@ -15,8 +17,43 @@ SEARCH_PAUSE = 5  # seconds between two languages' searches; GitHub's search is 
 MIN_SCAN_GAP = 60  # even when woken early (settings saved), wait this long after the last scan
 CONTRIBUTIONS_MAX_AGE = timedelta(days=1)  # look up your own pull requests again after this
 
+RECHECK_BATCH = 20  # saved issues checked again on GitHub after each scan, in one request
+
 # Read by the web page to show what the scanner is doing.
-status = {"scanning": False, "last_scan": None, "error": None}
+status = {
+    "scanning": False,
+    "last_scan": None,
+    "error": None,  # what went wrong in the last scan, or None
+    "error_kind": None,  # "no_token" | "rate_limit" | "other"
+    "retry_at": None,  # when the next try starts, after a failed scan
+    "has_token": True,  # are we signed in to GitHub?
+}
+
+
+def _error_kind(error: Exception) -> str:
+    if not status["has_token"]:
+        return "no_token"
+    if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in (403, 429):
+        return "rate_limit"
+    return "other"
+
+
+def recheck() -> None:
+    """Check saved issues again, so ones that were closed or taken since
+    we found them drop out of the list. Needs a GitHub login."""
+    if not status["has_token"]:
+        return
+    with db.connect() as conn:
+        issues = db.issues_to_recheck(conn, RECHECK_BATCH)
+    if not issues:
+        return
+    try:
+        results = check_issues({issue["id"]: issue["url"] for issue in issues})
+    except (httpx.HTTPError, ValueError) as error:
+        print(f"İşler yeniden kontrol edilemedi: {error}", flush=True)
+        return
+    with db.connect() as conn:
+        db.set_availability(conn, results)
 
 # Set this to start the next scan right away instead of waiting.
 wake = threading.Event()
@@ -89,18 +126,24 @@ def scan_forever() -> None:
 
     while True:
         status["scanning"] = True
+        status["has_token"] = has_token()
         try:
             refresh_contributions()
             new_issues, error = scan()
             pending += new_issues
             if new_issues:
                 ai.wake.set()  # summarize them now
+            if not error:
+                time.sleep(SEARCH_PAUSE)
+                recheck()
         except Exception as e:  # keep scanning even if one scan fails
             error = e
         finally:
             status["scanning"] = False
             status["last_scan"] = datetime.now(timezone.utc)
         status["error"] = str(error) if error else None
+        status["error_kind"] = _error_kind(error) if error else None
+        status["retry_at"] = status["last_scan"] + timedelta(seconds=RETRY_INTERVAL) if error else None
         if error:
             print(f"Tarama başarısız: {error}", flush=True)
 

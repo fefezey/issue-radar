@@ -37,7 +37,7 @@ EFFORTS = ["under_1h", "1_3h", "3_8h", "over_1d"]
 _LANGUAGE_NAMES = {"tr": "Turkish", "en": "English"}
 
 # Read by the web page: is there a model to make summaries with?
-status = {"available": False}
+status = {"available": False, "state": "no_ollama"}  # state: on | no_ollama | no_model
 
 # Set this to summarize right away, e.g. after a scan found new issues.
 wake = threading.Event()
@@ -66,15 +66,19 @@ Read the issue and answer in JSON with these fields:
 """
 
 
-def is_available() -> bool:
-    """True if Ollama is running and has the model."""
+def check() -> str:
+    """"on" if Ollama is running and has the model; otherwise "no_ollama" or "no_model"."""
     try:
         response = httpx.get(f"{OLLAMA_URL}/api/tags", timeout=3)
         response.raise_for_status()
     except httpx.HTTPError:
-        return False
+        return "no_ollama"
     names = {model["name"] for model in response.json().get("models", [])}
-    return MODEL in names or f"{MODEL}:latest" in names
+    return "on" if MODEL in names or f"{MODEL}:latest" in names else "no_model"
+
+
+def is_available() -> bool:
+    return check() == "on"
 
 
 def summarize(title: str, body: str, repo: str, lang: str) -> dict:
@@ -144,8 +148,14 @@ def _summarize_batch() -> int:
 def summarize_forever() -> None:
     """Keep summarizing new issues in the background, one at a time."""
     while True:
-        status["available"] = is_available()
+        status["state"] = check()
+        status["available"] = status["state"] == "on"
         done = _summarize_batch() if status["available"] else 0
         if done == 0:
             wake.wait(IDLE_WAIT)
             wake.clear()
+
+
+def failed_ids() -> set[int]:
+    """Issues whose summary failed; the page stops saying "in progress" for them."""
+    return set(_failed)

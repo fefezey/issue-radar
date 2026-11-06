@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -48,17 +49,22 @@ CLAIM_PHRASES = (
 )
 
 
+def has_token() -> bool:
+    return _token() is not None
+
+
+def _mentions_claim(text: str) -> bool:
+    text = text.lower()
+    return any(phrase in text for phrase in CLAIM_PHRASES)
+
+
 def _is_claimed(client: httpx.Client, issue: dict) -> bool:
     """True if someone has said in the comments that they are taking the issue."""
     if issue["comments"] == 0:
         return False
-    response = client.get(issue["comments_url"].removeprefix(API_URL))
+    response = client.get(issue["comments_url"].removeprefix(API_URL), params={"per_page": 100})
     response.raise_for_status()
-    return any(
-        phrase in comment["body"].lower()
-        for comment in response.json()
-        for phrase in CLAIM_PHRASES
-    )
+    return any(_mentions_claim(comment["body"] or "") for comment in response.json())
 
 
 def find_issues(
@@ -144,3 +150,63 @@ def issue_body(url: str) -> str:
         response = client.get(f"/repos/{path}")
         response.raise_for_status()
         return response.json().get("body") or ""
+
+
+# What we ask GitHub about each issue we already have, to see if it's still free.
+_CHECK_FIELDS = """
+fragment Check on Issue {
+  state
+  assignees(first: 10) { nodes { login } }
+  closedByPullRequestsReferences(first: 10, includeClosedPrs: false) { nodes { author { login } } }
+  comments(last: 50) { nodes { author { login } body } }
+}
+"""
+
+
+def check_issues(urls: dict[int, str]) -> dict[int, str]:
+    """Look again at issues we saved earlier, all in one request.
+
+    Returns "open", "taken" or "closed" for each issue id. Your own
+    assignment, pull request or comment doesn't count as "taken".
+    Issues GitHub couldn't answer about are left out.
+    """
+    aliases: dict[str, int] = {}
+    parts = []
+    for i, (issue_id, url) in enumerate(urls.items()):
+        owner, name, _, number = url.removeprefix("https://github.com/").split("/")[:4]
+        aliases[f"i{i}"] = issue_id
+        parts.append(
+            f"i{i}: repository(owner: {json.dumps(owner)}, name: {json.dumps(name)}) "
+            f"{{ issue(number: {int(number)}) {{ ...Check }} }}"
+        )
+    query = "query { viewer { login } " + " ".join(parts) + " }" + _CHECK_FIELDS
+
+    with _client() as client:
+        response = client.post("/graphql", json={"query": query})
+        response.raise_for_status()
+    data = response.json().get("data") or {}
+    me = (data.get("viewer") or {}).get("login", "")
+
+    def someone_else(actor: dict | None) -> bool:
+        return (actor or {}).get("login") not in (me, None)
+
+    results: dict[int, str] = {}
+    for alias, issue_id in aliases.items():
+        repo = data.get(alias)
+        if repo is None:  # GitHub didn't answer for this one; try again next time
+            continue
+        issue = repo.get("issue")
+        if issue is None or issue["state"] == "CLOSED":  # closed, deleted or moved
+            results[issue_id] = "closed"
+        elif (
+            any(someone_else(a) for a in issue["assignees"]["nodes"])
+            or any(someone_else(pr["author"]) for pr in issue["closedByPullRequestsReferences"]["nodes"])
+            or any(
+                someone_else(c["author"]) and _mentions_claim(c["body"] or "")
+                for c in issue["comments"]["nodes"]
+            )
+        ):
+            results[issue_id] = "taken"
+        else:
+            results[issue_id] = "open"
+    return results

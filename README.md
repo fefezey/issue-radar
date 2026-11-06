@@ -15,17 +15,18 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - 🔍 **Finds new `good first issue`s** in the languages you choose, newest first.
 - ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
 - 🌱 **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
-- ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this".
+- ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this". Saved issues are checked again on every scan, so ones that were closed or taken later drop out too.
+- 🤖 **AI summaries, free and private** — a small model on your own computer (via [Ollama](https://ollama.com)) explains each issue in two sentences in your language and guesses how hard it is. Optional; without it you just don't see summaries.
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
-- 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo.
+- 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
 - ⚙️ **Settings page** — pick the languages to search and the minimum stars.
 - 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
 - 🌗 Light and dark theme, following your system.
 
 ### Planned
 
-- [ ] AI summaries in your language, with difficulty and time estimates
 - [ ] A ready-to-post "I'd like to work on this" comment draft
+- [ ] "Is this project friendly to newcomers?" — how quickly maintainers answer and merge first-timers' pull requests
 - [ ] More interface languages — [add yours](#add-a-language)
 - [ ] Notifications on Linux and Windows
 - [ ] Telegram and Discord notifications
@@ -34,8 +35,10 @@ It runs on your own computer: no account, no server, your choices stay on your d
 
 1. **Scan** — every 10 minutes, search GitHub for new open issues labeled `good first issue`.
 2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with too few stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
-3. **Notify** — save new issues locally and show a Mac notification.
-4. **Decide** — open the web page and pick what you want to work on.
+3. **Re-check** — look again at up to 20 saved issues in a single request, and drop the ones that have been closed or taken since.
+4. **Summarize** — if Ollama is running, write a short summary and difficulty for each new issue, one at a time in the background.
+5. **Notify** — save new issues locally and show a Mac notification.
+6. **Decide** — open the web page and pick what you want to work on.
 
 ## Getting started
 
@@ -53,7 +56,21 @@ cd issue-radar
 uv run issue-radar
 ```
 
-Open **http://localhost:8000**. The first scan takes 30–40 seconds; the page refreshes by itself.
+Open **http://localhost:8000**. The first scan can take about a minute; the page refreshes by itself.
+
+### AI summaries (optional)
+
+Summaries are made by [Ollama](https://ollama.com) with the `gemma3:4b` model (about 3 GB). It's free, and the issue text never leaves your computer:
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull gemma3:4b
+```
+
+Issue Radar picks it up on its own; **Settings** shows whether summaries are on. The model runs fine on a Mac with 8 GB of memory, but close heavy apps (like the iOS Simulator) if summaries are slow. To use another model, set `OLLAMA_MODEL`, for example `OLLAMA_MODEL=qwen2.5:3b uv run issue-radar`.
+
+Summaries are written by a small model and can be wrong — the original issue is always one click away.
 
 ### GitHub access
 
@@ -94,6 +111,7 @@ src/issue_radar/
 ├── __init__.py      starts the scanner and the web page
 ├── github.py        talks to GitHub: search, star counts, claimed issues, your pull requests
 ├── scanner.py       scans on a schedule and decides when to notify
+├── ai.py            AI summaries through Ollama
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes

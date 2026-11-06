@@ -51,7 +51,12 @@ ADDED_ISSUE_COLUMNS = {
     "summary_lang": "TEXT",  # language the summary is written in
     "difficulty": "TEXT",  # easy | medium | hard
     "effort": "TEXT",  # under_1h | 1_3h | 3_8h | over_1d
+    "availability": "TEXT",  # open | taken | closed, from the last check on GitHub
+    "checked_at": "TEXT",  # when we last checked that
 }
+
+# Issues that are no longer free on GitHub are dropped from "new".
+_STILL_FREE = "COALESCE(availability, 'open') = 'open'"
 
 BODY_MAX_LENGTH = 4000
 
@@ -85,8 +90,9 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
     for issue in issues:
         cursor = conn.execute(
             """
-            INSERT OR IGNORE INTO issues (id, repo, title, url, stars, language, created_at, found_at, body)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO issues
+                (id, repo, title, url, stars, language, created_at, found_at, body, availability, checked_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
             """,
             (
                 issue["id"],
@@ -98,6 +104,7 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
                 issue["created_at"],
                 now,
                 (issue.get("body") or "")[:BODY_MAX_LENGTH],
+                now,  # the search just checked that nobody has taken it
             ),
         )
         if cursor.rowcount == 1:
@@ -120,6 +127,8 @@ def list_issues(
         SELECT * FROM issues
         WHERE status = ? AND stars >= ? AND repo NOT IN (SELECT repo FROM blocked_repos)
     """
+    if status == "new":
+        query += f" AND {_STILL_FREE}"
     params: list = [status, min_stars]
     if languages is not None:
         query += f" AND language IN ({', '.join('?' * len(languages))})"
@@ -136,14 +145,35 @@ def issues_to_summarize(conn: sqlite3.Connection, lang: str, limit: int) -> list
     return conn.execute(
         """
         SELECT * FROM issues
-        WHERE status IN ('new', 'interested')
+        WHERE (status = 'interested' OR (status = 'new' AND {_STILL_FREE}))
           AND (summary IS NULL OR summary_lang IS NOT ?)
           AND repo NOT IN (SELECT repo FROM blocked_repos)
         ORDER BY created_at DESC
         LIMIT ?
-        """,
+        """.format(_STILL_FREE=_STILL_FREE),
         (lang, limit),
     ).fetchall()
+
+
+def issues_to_recheck(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]:
+    """Issues still shown as free, the ones checked longest ago first."""
+    return conn.execute(
+        f"""
+        SELECT id, url FROM issues
+        WHERE status IN ('new', 'interested') AND {_STILL_FREE}
+        ORDER BY checked_at IS NOT NULL, checked_at
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+
+def set_availability(conn: sqlite3.Connection, results: dict[int, str]) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.executemany(
+        "UPDATE issues SET availability = ?, checked_at = ? WHERE id = ?",
+        [(availability, now, issue_id) for issue_id, availability in results.items()],
+    )
 
 
 def set_body(conn: sqlite3.Connection, issue_id: int, body: str) -> None:

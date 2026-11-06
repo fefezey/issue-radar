@@ -55,6 +55,15 @@ def stars(count: int) -> str:
     return t("issue.stars", count, stars=short)
 
 
+def _wants_json() -> bool:
+    """The page sends its buttons with fetch() and doesn't need a new page back."""
+    return request.headers.get("X-Requested-With") == "fetch"
+
+
+def _done(**redirect_args):
+    return ("", 204) if _wants_json() else redirect(url_for("index", **redirect_args))
+
+
 def scan_text() -> str:
     if status["scanning"]:
         return t("scan.first") if status["last_scan"] is None else t("scan.running")
@@ -94,9 +103,14 @@ def index():
         hidden_repo=request.args.get("undo_repo"),
         contributed=contributed,
         ai_on=ai.status["available"],
+        ai_state=ai.status["state"],
+        ai_model=ai.MODEL,
+        ai_failed=ai.failed_ids(),
         scan_text=scan_text(),
         scanning=status["scanning"],
         scan_failed=bool(status["error"]),
+        error_kind=status["error_kind"] or ("no_token" if not status["has_token"] else None),
+        retry_at=status["retry_at"].astimezone().strftime("%H:%M") if status["retry_at"] else "",
         all_languages=SUPPORTED_LANGUAGES,
         chosen_languages=languages,
         min_stars=min_stars,
@@ -138,14 +152,15 @@ def interested(issue_id: int):
         if issue is None:
             abort(404)
         db.set_status(conn, issue_id, "interested")
-    return redirect(issue["url"])
+    # The page opens GitHub itself when it uses fetch(); without JavaScript we go there.
+    return ("", 204) if _wants_json() else redirect(issue["url"])
 
 
 @app.post("/issues/<int:issue_id>/skip")
 def skip(issue_id: int):
     with db.connect() as conn:
         db.set_status(conn, issue_id, "skipped")
-    return redirect(url_for("index", undo_issue=issue_id))
+    return _done(undo_issue=issue_id)
 
 
 @app.post("/issues/<int:issue_id>/restore")
@@ -153,7 +168,7 @@ def restore(issue_id: int):
     """Put an issue back in the "new" list (undo a skip, or give up on an issue)."""
     with db.connect() as conn:
         db.set_status(conn, issue_id, "new")
-    return redirect(url_for("index", tab=request.form.get("tab", "new")))
+    return _done(tab=request.form.get("tab", "new"))
 
 
 @app.post("/repos/block")
@@ -161,11 +176,11 @@ def block():
     repo = request.form["repo"]
     with db.connect() as conn:
         db.block_repo(conn, repo)
-    return redirect(url_for("index", undo_repo=repo))
+    return _done(undo_repo=repo)
 
 
 @app.post("/repos/unblock")
 def unblock():
     with db.connect() as conn:
         db.unblock_repo(conn, request.form["repo"])
-    return redirect(url_for("index", tab=request.form.get("tab", "new")))
+    return _done(tab=request.form.get("tab", "new"))

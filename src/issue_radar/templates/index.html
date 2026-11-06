@@ -10,9 +10,18 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <style>
     :root {
+      color-scheme: light dark;
+      /* Motion: short and calm. Turned off for people who ask for less motion. */
+      --ease-out: cubic-bezier(0.2, 0, 0, 1);
+      --ease-in: cubic-bezier(0.4, 0, 1, 1);
+      --dur-1: 120ms;
+      --dur-2: 180ms;
+      --dur-3: 240ms;
+
       --bg: #F3F4F6;
       --surface: #FFFFFF;
-      --raised: #F3F4F6;
+      --raised: #E8EBEF;
+      --warn-dot: #B45309;
       --border: #E5E7EB;
       --text: #111827;
       --text-2: #374151;
@@ -26,7 +35,7 @@
       --ok-dot: #0D9488;
       --ok-bg: #CCFBF1;
       --medium: #92400E;
-      --medium-dot: #D97706;
+      --medium-dot: #B45309;
       --medium-bg: #FEF3C7;
       --hard: #9D174D;
       --hard-dot: #DB2777;
@@ -41,6 +50,7 @@
         --bg: #0B0F17;
         --surface: #111827;
         --raised: #1A2230;
+        --warn-dot: #F59E0B;
         --border: #263042;
         --text: #E5E7EB;
         --text-2: #D1D5DB;
@@ -97,10 +107,10 @@
       color: var(--muted);
     }
     .scan::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
-    .scan.busy::before { background: var(--accent); animation: pulse 1s ease-in-out infinite alternate; }
-    .scan.failed::before { background: #F59E0B; }
-    @keyframes pulse { to { opacity: 0.3; } }
-    .lang { margin: 0; display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .scan.busy::before { background: var(--accent); animation: pulse 1600ms ease-in-out infinite alternate; }
+    .scan.failed::before { background: var(--warn-dot); }
+    @keyframes pulse { to { opacity: 0.35; } }
+    .lang { margin: 0; display: flex; border: 1px solid var(--border); border-radius: 8px; }
     .lang button {
       font: inherit;
       font-size: 12px;
@@ -113,8 +123,11 @@
       color: var(--muted);
       cursor: pointer;
     }
+    .lang button:first-child { border-radius: 7px 0 0 7px; }
+    .lang button:last-child { border-radius: 0 7px 7px 0; }
     .lang button + button { border-left: 1px solid var(--border); }
-    .lang button[aria-pressed="true"] { background: var(--raised); color: var(--text); }
+    .lang button[aria-pressed="true"] { background: var(--surface); color: var(--text); }
+    .lang button:focus-visible { outline-offset: -2px; }
     /* On narrow screens: logo and language switch on top, scan status below. */
     @media (max-width: 560px) {
       .lang { margin-left: auto; }
@@ -142,8 +155,14 @@
       color: var(--muted);
       text-decoration: none;
     }
-    nav a:hover { color: var(--text); }
-    nav a[aria-current="page"] { background: var(--raised); color: var(--text); font-weight: 600; }
+    nav a:hover { color: var(--text); background: color-mix(in srgb, var(--raised) 60%, transparent); }
+    nav a[aria-current="page"] {
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--border);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .count[hidden] { display: none; }
     .count {
       font-size: 12px;
       font-weight: 600;
@@ -155,7 +174,8 @@
     .count.new { background: var(--accent); color: #FFFFFF; }
 
     main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-    h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 4px; }
+    h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+    .subtitle { margin: -10px 0 4px; font-size: 13px; color: var(--muted); }
 
     article {
       background: var(--surface);
@@ -165,6 +185,23 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      transition:
+        opacity var(--dur-2) var(--ease-in),
+        transform var(--dur-2) var(--ease-in),
+        height var(--dur-3) var(--ease-out),
+        padding var(--dur-3) var(--ease-out),
+        margin var(--dur-3) var(--ease-out),
+        border-color var(--dur-1) var(--ease-out);
+    }
+    article:hover { border-color: color-mix(in srgb, var(--border) 60%, var(--muted)); }
+    /* A card leaving the list: fade and slide out, then close the gap. */
+    article.fading { opacity: 0; transform: translateX(-8px); overflow: hidden; }
+    article.collapsing {
+      height: 0 !important;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+      margin-bottom: -16px;
     }
     .meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
     .meta .repo { color: var(--text); font-weight: 500; }
@@ -185,7 +222,8 @@
     }
     .badge::before { content: ""; width: 8px; height: 8px; flex: none; }
     .badges { display: flex; flex-wrap: wrap; gap: 8px; }
-    .badge.unclaimed::before { border-radius: 50%; background: var(--ok-dot); }
+    .badge.gone { color: var(--medium); background: var(--medium-bg); }
+    .badge.gone::before { content: none; }
     .badge.known { color: var(--muted); }
     .badge.known::before { background: var(--muted); border-radius: 2px; }
     .badge.plain::before { content: none; }
@@ -232,8 +270,15 @@
       display: inline-flex;
       align-items: center;
       text-decoration: none;
+      transition:
+        background-color var(--dur-1) var(--ease-out),
+        border-color var(--dur-1) var(--ease-out),
+        color var(--dur-1) var(--ease-out);
     }
     .btn:hover { background: var(--raised); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.6; cursor: default; }
+    nav a, .chip span, .lang button { transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
     .btn.primary { background: var(--accent); border-color: var(--accent); color: #FFFFFF; font-weight: 500; }
     .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
     .btn.quiet { border-color: transparent; color: var(--muted); }
@@ -252,7 +297,7 @@
     .list form:last-child { border-bottom: none; }
 
     .settings { display: flex; flex-direction: column; gap: 16px; margin: 0; }
-    fieldset {
+    fieldset, .panel {
       margin: 0;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -263,7 +308,14 @@
       gap: 12px;
       min-width: 0;
     }
-    legend { float: left; padding: 0; font-size: 15px; font-weight: 600; }
+    legend, .panel h2 { float: left; padding: 0; margin: 0; font-size: 15px; font-weight: 600; }
+    code {
+      font: 13px "Geist Mono", ui-monospace, monospace;
+      background: var(--raised);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .cmd { align-self: flex-start; padding: 6px 10px; overflow-wrap: anywhere; }
     .hint { margin: 0; font-size: 13px; color: var(--muted); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip input { position: absolute; opacity: 0; pointer-events: none; }
@@ -299,7 +351,8 @@
       background: var(--accent-soft);
       color: var(--text);
     }
-    .notice.error { background: rgba(245, 158, 11, 0.15); }
+    .notice { margin: 0; line-height: 1.6; }
+    .notice.error { background: var(--medium-bg); }
 
     .empty {
       border: 1px dashed var(--border);
@@ -317,8 +370,10 @@
     .toast {
       position: fixed;
       left: 50%;
-      bottom: 24px;
+      bottom: calc(24px + env(safe-area-inset-bottom));
       transform: translateX(-50%);
+      animation: toast-in var(--dur-2) var(--ease-out);
+      transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
       max-width: calc(100% - 32px);
       background: var(--toast-bg);
       color: var(--toast-text);
@@ -342,6 +397,18 @@
       background: transparent;
       color: var(--toast-action);
       cursor: pointer;
+    }
+    .toast button:hover { background: rgba(255, 255, 255, 0.08); }
+    .toast span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .toast.leaving { opacity: 0; transform: translate(-50%, 4px); }
+    @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
     }
   </style>
 </head>
@@ -370,13 +437,13 @@
 <div class="layout">
   <nav aria-label="{{ t('nav.label') }}">
     <a href="{{ url_for('index') }}" {% if tab == 'new' %}aria-current="page"{% endif %}>
-      {{ t('nav.new') }} {% if counts.new %}<span class="count new">{{ counts.new }}</span>{% endif %}
+      {{ t('nav.new') }} <span class="count new" data-count="new" {% if not counts.new %}hidden{% endif %}>{{ counts.new }}</span>
     </a>
     <a href="{{ url_for('index', tab='interested') }}" {% if tab == 'interested' %}aria-current="page"{% endif %}>
-      {{ t('nav.interested') }} {% if counts.interested %}<span class="count">{{ counts.interested }}</span>{% endif %}
+      {{ t('nav.interested') }} <span class="count" data-count="interested" {% if not counts.interested %}hidden{% endif %}>{{ counts.interested }}</span>
     </a>
     <a href="{{ url_for('index', tab='hidden') }}" {% if tab == 'hidden' %}aria-current="page"{% endif %}>
-      {{ t('nav.hidden') }} {% if counts.hidden %}<span class="count">{{ counts.hidden }}</span>{% endif %}
+      {{ t('nav.hidden') }} <span class="count" data-count="hidden" {% if not counts.hidden %}hidden{% endif %}>{{ counts.hidden }}</span>
     </a>
     <a href="{{ url_for('index', tab='settings') }}" {% if tab == 'settings' %}aria-current="page"{% endif %}>
       {{ t('nav.settings') }}
@@ -420,6 +487,19 @@
         </div>
       </form>
 
+      <section class="panel">
+        <h2>{{ t('settings.ai.title') }}</h2>
+        {% if ai_state == 'on' %}
+          <p class="hint">{{ t('settings.ai.on', model=ai_model) }}</p>
+        {% elif ai_state == 'no_model' %}
+          <p class="hint">{{ t('settings.ai.no_model', model=ai_model) }}</p>
+          <code class="cmd">ollama pull {{ ai_model }}</code>
+        {% else %}
+          <p class="hint">{{ t('settings.ai.no_ollama') }}</p>
+          <code class="cmd">brew install ollama &amp;&amp; brew services start ollama &amp;&amp; ollama pull {{ ai_model }}</code>
+        {% endif %}
+      </section>
+
     {% elif tab == 'hidden' %}
       <h1>{{ t('nav.hidden') }}</h1>
       {% if hidden_repos %}
@@ -439,9 +519,23 @@
 
     {% else %}
       <h1>{{ t('nav.new') if tab == 'new' else t('nav.interested') }}</h1>
+      {% if tab == 'new' %}
+        <p class="subtitle">{{ t('new.subtitle') }}</p>
+        {% if error_kind == 'no_token' %}
+          <p class="notice error" role="status">
+            <strong>{{ t('error.no_token.title') }}</strong> {{ t('error.no_token.text') }}
+            <code>gh auth login</code>
+          </p>
+        {% elif error_kind == 'rate_limit' %}
+          <p class="notice error" role="status">{{ t('error.rate_limit', time=retry_at) }}</p>
+        {% elif error_kind %}
+          <p class="notice error" role="status">{{ t('error.other', time=retry_at) }}</p>
+        {% endif %}
+      {% endif %}
 
       {% for issue in issues %}
-        <article>
+        <article data-id="{{ issue.id }}" data-repo="{{ issue.repo }}" data-url="{{ issue.url }}"
+                 data-restore="{{ url_for('restore', issue_id=issue.id) }}">
           <div class="meta">
             <span class="repo mono">{{ issue.repo }}</span>
             <span>{{ issue.stars | stars }}</span>
@@ -455,11 +549,11 @@
               <span class="badge {{ issue.difficulty }}">{{ t('difficulty.' ~ issue.difficulty) }}</span>
               <span class="badge plain">{{ t('effort.' ~ issue.effort) }}</span>
             {% endif %}
-            {% if tab == 'new' %}
-              <span class="badge unclaimed">{{ t('issue.unclaimed') }}</span>
-              {% if issue.repo in contributed %}
-                <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
-              {% endif %}
+            {% if tab == 'new' and issue.repo in contributed %}
+              <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
+            {% endif %}
+            {% if tab == 'interested' and issue.availability in ('taken', 'closed') %}
+              <span class="badge gone">{{ t('issue.' ~ issue.availability) }}</span>
             {% endif %}
           </div>
 
@@ -468,20 +562,21 @@
               <span class="summary-label" title="{{ t('ai.note') }}">{{ t('ai.label') }}</span>
               <p lang="{{ issue.summary_lang }}">{{ issue.summary }}</p>
             </div>
-          {% elif ai_on %}
+          {% elif ai_on and issue.id not in ai_failed %}
             <p class="summary pending">{{ t('ai.pending') }}</p>
           {% endif %}
 
           {% if tab == 'new' %}
             <div class="actions">
-              <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank"
-                    onsubmit="setTimeout(() => location.reload(), 300)">
+              {# Without JavaScript these are plain forms; with it, the page sends them
+                 without reloading (see the script at the bottom). #}
+              <form method="post" action="{{ url_for('interested', issue_id=issue.id) }}" target="_blank" data-action="interested">
                 <button class="btn primary">{{ t('action.interested') }}</button>
               </form>
-              <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}">
+              <form method="post" action="{{ url_for('skip', issue_id=issue.id) }}" data-action="skip">
                 <button class="btn">{{ t('action.skip') }}</button>
               </form>
-              <form method="post" action="{{ url_for('block') }}">
+              <form method="post" action="{{ url_for('block') }}" data-action="hide">
                 <input type="hidden" name="repo" value="{{ issue.repo }}">
                 <button class="btn quiet">{{ t('action.hide') }}</button>
               </form>
@@ -489,7 +584,7 @@
           {% else %}
             <div class="actions">
               <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
-              <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}">
+              <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}" data-action="release">
                 <input type="hidden" name="tab" value="interested">
                 <button class="btn">{{ t('action.release') }}</button>
               </form>
@@ -539,20 +634,142 @@
 {% endif %}
 
 <script>
-  // Hide the undo toast after a few seconds and clean the address bar.
-  const toast = document.querySelector(".toast");
-  if (toast) {
-    history.replaceState(null, "", location.pathname);
-    setTimeout(() => toast.remove(), 6000);
+  const TEXT = {{ {
+    "skipped": t("toast.skipped"),
+    "interested": t("toast.interested"),
+    "hidden": t("toast.hidden", repo="__REPO__"),
+    "released": t("toast.released"),
+    "undo": t("toast.undo"),
+  } | tojson }};
+  const UNBLOCK_URL = {{ url_for('unblock') | tojson }};
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function post(url, body) {
+    return fetch(url, { method: "POST", body, headers: { "X-Requested-With": "fetch" } });
   }
 
-  // Show "settings saved" once; don't bring it back on refresh.
-  if (document.querySelector(".notice")) {
+  // --- Toast with an undo button. Stays while the mouse or focus is on it. ---
+  function closeToast(toast) {
+    toast.classList.add("leaving");
+    setTimeout(() => toast.remove(), calm ? 0 : 150);
+  }
+
+  function armToast(toast) {
+    let timer;
+    const start = () => { timer = setTimeout(() => closeToast(toast), 8000); };
+    const stop = () => clearTimeout(timer);
+    toast.addEventListener("mouseenter", stop);
+    toast.addEventListener("mouseleave", start);
+    toast.addEventListener("focusin", stop);
+    toast.addEventListener("focusout", start);
+    start();
+  }
+
+  function showToast(text, undo) {
+    document.querySelector(".toast")?.remove();
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.setAttribute("role", "status");
+    const label = document.createElement("span");
+    label.textContent = text;
+    toast.append(label);
+    if (undo) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = TEXT.undo;
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        await post(undo.url, undo.body);
+        location.reload();  // undo is rare; a fresh page is simplest
+      });
+      toast.append(button);
+    }
+    document.body.append(toast);
+    armToast(toast);
+  }
+
+  document.addEventListener("keydown", (event) => {
+    const toast = document.querySelector(".toast");
+    if (event.key === "Escape" && toast) closeToast(toast);
+  });
+
+  // --- Cards leave the list smoothly, and the page stays where it was. ---
+  function bumpCount(name, delta) {
+    const count = document.querySelector(`[data-count="${name}"]`);
+    if (!count) return;
+    const value = Math.max(0, Number(count.textContent) + delta);
+    count.textContent = value;
+    count.hidden = value === 0;
+  }
+
+  function removeCards(cards) {
+    const next = cards.at(-1).nextElementSibling;
+    for (const card of cards) {
+      if (calm) { card.remove(); continue; }
+      card.style.height = card.offsetHeight + "px";
+      requestAnimationFrame(() => card.classList.add("fading"));
+      setTimeout(() => card.classList.add("collapsing"), 180);
+      setTimeout(() => card.remove(), 450);
+    }
+    // Keep keyboard focus in the list.
+    if (next?.matches("article")) next.querySelector("h2 a").focus({ preventScroll: true });
+  }
+
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    const action = form.dataset.action;
+    if (!action) return;  // other forms (settings, language) work as usual
+    event.preventDefault();
+
+    const card = form.closest("article");
+    if (action === "interested") window.open(card.dataset.url, "_blank", "noopener");
+    form.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+
+    let response = null;
+    try { response = await post(form.action, new FormData(form)); } catch {}
+    if (!response?.ok) { location.reload(); return; }
+
+    const cards = action === "hide"
+      ? [...document.querySelectorAll("article")].filter((a) => a.dataset.repo === card.dataset.repo)
+      : [card];
+    removeCards(cards);
+
+    if (action === "skip") {
+      bumpCount("new", -1);
+      showToast(TEXT.skipped, { url: card.dataset.restore });
+    } else if (action === "interested") {
+      bumpCount("new", -1);
+      bumpCount("interested", 1);
+      showToast(TEXT.interested, { url: card.dataset.restore });
+    } else if (action === "hide") {
+      bumpCount("new", -cards.length);
+      bumpCount("hidden", 1);
+      const body = new FormData();
+      body.append("repo", card.dataset.repo);
+      showToast(TEXT.hidden.replace("__REPO__", card.dataset.repo), { url: UNBLOCK_URL, body });
+    } else if (action === "release") {
+      bumpCount("interested", -1);
+      bumpCount("new", 1);
+      showToast(TEXT.released, null);
+    }
+
+    // The last card is gone: reload to show the empty state.
+    setTimeout(() => { if (!document.querySelector("main article")) location.reload(); }, 500);
+  });
+
+  // --- Toast and notice that came with the page (when JavaScript was off for the action). ---
+  const pageToast = document.querySelector(".toast");
+  if (pageToast) {
+    history.replaceState(null, "", location.pathname);
+    armToast(pageToast);
+  }
+  if (document.querySelector(".notice[role=status]") && location.search.includes("saved")) {
     history.replaceState(null, "", location.pathname + "?tab=settings");
   }
 
-  // While a scan is running, check again shortly so new issues show up.
-  {% if scanning %}setTimeout(() => location.reload(), 10000);{% endif %}
+  // Only while the very first scan fills an empty list: check again shortly.
+  // Otherwise never reload on our own; it would interrupt reading.
+  {% if scanning and tab == 'new' and not issues %}setTimeout(() => location.reload(), 10000);{% endif %}
 </script>
 </body>
 </html>
