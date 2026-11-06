@@ -92,12 +92,58 @@ def test_repo_info_counts_outsiders_merged_pull_requests(monkeypatch):
                 pull(2, "CONTRIBUTOR", merged=False),  # closed without merging
                 pull(200, "CONTRIBUTOR"),  # too long ago
             ])
+        if request.url.path == "/graphql":
+            return httpx.Response(200, json={"data": {"repository": {"pullRequests": {"nodes": []}}}})
         return httpx.Response(200, json={"description": " A project. ", "stargazers_count": 42})
 
     monkeypatch.setattr(
         github, "_client", lambda: httpx.Client(base_url=github.API_URL, transport=httpx.MockTransport(answer))
     )
-    assert github.repo_info("o/p") == {"description": "A project.", "stars": 42, "outside_merged": 2}
+    assert github.repo_info("o/p") == {
+        "description": "A project.",
+        "stars": 42,
+        "outside_merged": 2,
+        "response_hours": None,  # no pull requests to tell from
+    }
+
+
+NOW = datetime(2026, 11, 1, tzinfo=timezone.utc)
+
+
+def pr(days_ago, answered_after_hours=None, role="CONTRIBUTOR", by="MEMBER", kind="User", merged_after_hours=None):
+    created = NOW - timedelta(days=days_ago)
+    at = lambda hours: (created + timedelta(hours=hours)).isoformat()
+    comments = [{"createdAt": at(0.1), "authorAssociation": "NONE", "author": {"__typename": "Bot"}}]  # a CLA bot
+    if answered_after_hours is not None:
+        comments.append({"createdAt": at(answered_after_hours), "authorAssociation": by, "author": {"__typename": "User"}})
+    return {
+        "createdAt": created.isoformat(),
+        "mergedAt": at(merged_after_hours) if merged_after_hours is not None else None,
+        "authorAssociation": role,
+        "author": {"__typename": kind},
+        "comments": {"nodes": comments},
+        "reviews": {"nodes": []},
+    }
+
+
+def test_response_hours_is_the_usual_wait_for_the_teams_first_answer():
+    pulls = [
+        pr(20, answered_after_hours=2),
+        pr(30, answered_after_hours=10),
+        pr(40, merged_after_hours=30),  # merging counts as an answer
+        pr(50, answered_after_hours=1, by="CONTRIBUTOR"),  # another outsider: not an answer...
+        pr(10, role="MEMBER", answered_after_hours=500),  # the team's own pull request
+        pr(5, kind="Bot", answered_after_hours=500),  # a bot's
+        pr(200, answered_after_hours=500),  # too long ago
+        pr(2),  # too new to say it went unanswered
+    ]
+    # Waits: 2, 10, 30 and never (the one only another outsider answered) -> 10.
+    assert github.response_hours(pulls, NOW) == 10
+
+
+def test_response_hours_when_most_go_unanswered_or_there_are_too_few():
+    assert github.response_hours([pr(20), pr(30), pr(40, answered_after_hours=5)], NOW) == -1
+    assert github.response_hours([pr(20, answered_after_hours=5), pr(30)], NOW) is None
 
 
 def test_guess_languages_from_your_repos(monkeypatch):

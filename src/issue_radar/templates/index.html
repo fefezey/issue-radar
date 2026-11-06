@@ -852,6 +852,16 @@
                   <p class="signal none">{{ t('signal.none') }}</p>
                 {% endif %}
               {% endif %}
+              {% if info and info.response_hours is not none %}
+                {% if info.response_hours < 0 %}
+                  <p class="signal none">{{ t('signal.unanswered') }}</p>
+                {% elif info.response_hours < 24 %}
+                  <p class="signal">{{ t('signal.answers_same_day') }}</p>
+                {% else %}
+                  {% set days = (info.response_hours / 24) | round | int %}
+                  <p class="signal {% if days > 7 %}none{% endif %}">{{ t('signal.answers_in_days', days, days=days) }}</p>
+                {% endif %}
+              {% endif %}
             </div>
             {{ card(items[0], true) }}
             {% if items | length > 1 %}

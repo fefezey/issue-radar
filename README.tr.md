@@ -21,17 +21,17 @@ Her şey kendi Mac'inde çalışır. Verilerin ve tercihlerin bilgisayarında ka
 
 ## Neler yapıyor
 
-Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve başkasının çoktan aldığı işleri ayıklar. Dilleri ilk açılışta senin GitHub hesabına bakarak kendisi seçer. Her işin yanında projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini görürsün, böylece cevap vermeyen bir projeye boşuna emek harcamazsın.
+Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve başkasının çoktan aldığı işleri ayıklar. Dilleri ilk açılışta senin GitHub hesabına bakarak kendisi seçer. Her işin yanında projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini görürsün. Yeni gelenlerin ekipten ilk cevabı genelde kaç günde aldığı da yazar, böylece cevap vermeyen bir projeye boşuna emek harcamazsın.
 
 Bilgisayarında çalışan bir yapay zeka varsa işleri özetler ve başlıklarını senin diline çevirir. Bir işi almaya karar verdiğinde sana hazır bir yorum taslağı, bakman gereken dosyaları ve projenin kurulum ve test komutlarını gösterir. Yorumunu Türkçe yazarsan tek tuşla İngilizceye çevirebilirsin. Sonra ilk yorumundan PR'ının birleşmesine kadar ilerlemeni takip eder ve önemli bir şey olduğunda Mac'inde haber verir.
 
-İleride bakımcıların yeni gelenlere ne kadar hızlı cevap verdiğini göstermeyi, daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Linux ve Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
+İleride daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Linux ve Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
 
 ## Nasıl çalışıyor
 
 Issue Radar 10 dakikada bir GitHub'da başlangıç etiketi taşıyan yeni, açık işleri arar. Bulduklarından atanmış olanları, bağlı bir PR'ı olanları, yorumlarda birinin "ben alıyorum" dediklerini ve 100 yıldızdan az projelere ait olanları eler. Projelerin yıldız sayılarını bir gün boyunca hatırladığı için GitHub'a her taramada yeniden sormaz.
 
-Daha önce kaydettiği işlere de düzenli olarak tekrar bakar ve o arada kapanan ya da başkasının aldığı işleri listeden çıkarır. Her taramada birkaç projeyi de tanımaya çalışır; projenin ne işe yaradığına ve son zamanlarda ekip dışından kaç PR birleştirdiğine bakar (botları saymaz).
+Daha önce kaydettiği işlere de düzenli olarak tekrar bakar ve o arada kapanan ya da başkasının aldığı işleri listeden çıkarır. Her taramada birkaç projeyi de tanımaya çalışır; projenin ne işe yaradığına, son zamanlarda ekip dışından kaç PR birleştirdiğine ve bu PR'ların sahiplerinin ekipten ilk yorumu, incelemeyi ya da birleştirmeyi genelde ne kadar beklediğine bakar. Botları saymaz; hiç cevap almamış bir PR'ı da en uzun bekleyiş olarak sayar.
 
 Ollama çalışıyorsa her yeni işe arka planda, sırayla kısa bir özet yazar. Açıklaması çok kısa olan işleri özetlemez, çünkü orada başlık zaten yeterince şey söylüyor. Yeni işleri bilgisayarına kaydeder, Mac'inde bildirim gösterir ve gerisini sana bırakır. Web sayfasını açıp üzerinde çalışmak istediğin işi sen seçersin.
 

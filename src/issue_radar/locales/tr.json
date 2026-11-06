@@ -120,5 +120,8 @@
   "settings.github.signed_out": "GitHub'a bağlı değilsin. Bağlanınca diller hesabından seçilir ve tarama daha hızlı olur. Terminalde şunu çalıştır:",
   "settings.github.pick": "Dillerimi GitHub'dan seç",
   "settings.github.picked": "GitHub'da kullandığın diller seçildi. Liste birazdan yenilenecek.",
-  "settings.error.github_languages": "GitHub'da taradığımız dillerden birini kullanan bir projeni bulamadım. Dilleri aşağıdan kendin seç."
+  "settings.error.github_languages": "GitHub'da taradığımız dillerden birini kullanan bir projeni bulamadım. Dilleri aşağıdan kendin seç.",
+  "signal.unanswered": "Ekip dışından gelen PR'ların çoğu cevapsız kalıyor",
+  "signal.answers_same_day": "Ekip dışından gelen PR'lara genelde aynı gün cevap veriyor",
+  "signal.answers_in_days.other": "Ekip dışından gelen PR'lara genelde {days} günde cevap veriyor"
 }

@@ -164,3 +164,20 @@ def test_summaries_in_another_language_are_not_shown(client):
     with db.connect() as conn:
         db.set_setting(conn, "language", "en")
     assert "<code>a.py</code>" not in client.get("/").get_data(as_text=True)
+
+
+@pytest.mark.parametrize(
+    "hours, text",
+    [
+        (3, "genelde aynı gün cevap veriyor"),
+        (50, "genelde 2 günde cevap veriyor"),
+        (-1, "çoğu cevapsız kalıyor"),
+        (None, "cevap veriyor"),  # too few to tell: says nothing
+    ],
+)
+def test_project_shows_how_fast_the_team_answers(client, hours, text):
+    with db.connect() as conn:
+        db.set_setting(conn, "language", "tr")
+        db.save_repo_info(conn, "owner/project", {"stars": 500, "description": "", "outside_merged": 3, "response_hours": hours})
+    page = client.get("/").get_data(as_text=True)
+    assert (text in page) == (hours is not None)

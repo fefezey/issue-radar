@@ -86,7 +86,12 @@ ADDED_REPO_COLUMNS = {
     "info_checked_at": "TEXT",
     "claim_policy": "TEXT",  # "ask" or "no_claim", from the contributing guide
     "guide_checked_at": "TEXT",
+    "response_hours": "REAL",  # how long outsiders usually wait for an answer; -1: mostly never
+    "info_version": "INTEGER",
 }
+
+# Bump when repo_info() learns something new, so every project is looked at again.
+INFO_VERSION = 2
 
 
 def _add_missing_columns(conn: sqlite3.Connection) -> None:
@@ -309,10 +314,10 @@ def repos_needing_info(conn: sqlite3.Connection, max_age: timedelta, limit: int)
         LEFT JOIN repo_stars r ON r.repo = i.repo
         WHERE i.status IN ('new', 'interested') AND {_STILL_FREE}
           AND i.repo NOT IN (SELECT repo FROM blocked_repos)
-          AND (r.info_checked_at IS NULL OR r.info_checked_at < ?)
+          AND (r.info_checked_at IS NULL OR r.info_checked_at < ? OR COALESCE(r.info_version, 1) < ?)
         LIMIT ?
         """,
-        (since, limit),
+        (since, INFO_VERSION, limit),
     )
     return [row["repo"] for row in rows]
 
@@ -321,14 +326,19 @@ def save_repo_info(conn: sqlite3.Connection, repo: str, info: dict) -> None:
     now = datetime.now(timezone.utc).isoformat()
     conn.execute(
         """
-        INSERT INTO repo_stars (repo, stars, checked_at, description, outside_merged, info_checked_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO repo_stars
+            (repo, stars, checked_at, description, outside_merged, response_hours, info_checked_at, info_version)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(repo) DO UPDATE SET
             stars = excluded.stars, checked_at = excluded.checked_at,
             description = excluded.description, outside_merged = excluded.outside_merged,
-            info_checked_at = excluded.info_checked_at
+            response_hours = excluded.response_hours,
+            info_checked_at = excluded.info_checked_at, info_version = excluded.info_version
         """,
-        (repo, info["stars"], now, info["description"], info["outside_merged"], now),
+        (
+            repo, info["stars"], now, info["description"], info["outside_merged"],
+            info.get("response_hours"), now, INFO_VERSION,
+        ),
     )
 
 

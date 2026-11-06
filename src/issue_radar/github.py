@@ -289,10 +289,12 @@ _OUTSIDE_ROLES = {"CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"
 
 
 def repo_info(repo: str) -> dict:
-    """What a project is, and whether it takes pull requests from outsiders.
+    """What a project is, whether it takes pull requests from outsiders,
+    and how quickly its team answers them.
 
     Counts pull requests merged in the last NEWCOMER_WINDOW that came from
-    outside the project's team. Bots don't count. Two requests to GitHub's regular API (not the search).
+    outside the project's team. Bots don't count. Two requests to GitHub's
+    regular API (not the search) and one GraphQL request.
     """
     since = datetime.now(timezone.utc) - NEWCOMER_WINDOW
     with _client() as client:
@@ -303,6 +305,9 @@ def repo_info(repo: str) -> dict:
             params={"state": "closed", "sort": "updated", "direction": "desc", "per_page": 100},
         )
         pulls.raise_for_status()
+        owner, name = repo.split("/")
+        recent = client.post("/graphql", json={"query": _RESPONSE_QUERY, "variables": {"owner": owner, "name": name}})
+        recent.raise_for_status()
 
     outside = 0
     for pr in pulls.json():
@@ -318,7 +323,75 @@ def repo_info(repo: str) -> dict:
         "description": (info.get("description") or "").strip(),
         "stars": info["stargazers_count"],
         "outside_merged": outside,
+        "response_hours": response_hours(
+            (((recent.json().get("data") or {}).get("repository") or {}).get("pullRequests") or {}).get("nodes") or []
+        ),
     }
+
+
+# Roles GitHub gives the project's own team: their answer is the one that counts.
+_TEAM_ROLES = {"OWNER", "MEMBER", "COLLABORATOR"}
+# An unanswered pull request younger than this may still get an answer; leave it out.
+ANSWER_GRACE = timedelta(days=7)
+# Fewer outsiders' pull requests than this, and we can't say much.
+MIN_PULL_REQUESTS = 3
+
+_RESPONSE_QUERY = """
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(first: 40, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        createdAt
+        mergedAt
+        authorAssociation
+        author { __typename }
+        comments(first: 20) { nodes { createdAt authorAssociation author { __typename } } }
+        reviews(first: 20) { nodes { submittedAt authorAssociation author { __typename } } }
+      }
+    }
+  }
+}
+"""
+
+
+def _first_team_answer(pr: dict) -> datetime | None:
+    """When the project's team first answered a pull request: a comment, a review or merging it."""
+    times = [
+        item.get("createdAt") or item.get("submittedAt")
+        for item in pr["comments"]["nodes"] + pr["reviews"]["nodes"]
+        if item.get("authorAssociation") in _TEAM_ROLES and (item.get("author") or {}).get("__typename") != "Bot"
+    ]
+    if pr.get("mergedAt"):
+        times.append(pr["mergedAt"])
+    return min((datetime.fromisoformat(time) for time in times if time), default=None)
+
+
+def response_hours(pull_requests: list[dict], now: datetime | None = None) -> float | None:
+    """How long outsiders usually wait for the team's first answer, in hours.
+
+    The median over pull requests from outside the team in the last
+    NEWCOMER_WINDOW; ones that never got an answer count as the longest wait.
+    -1 if most never got one, None if there are too few to tell.
+    """
+    now = now or datetime.now(timezone.utc)
+    waits: list[float] = []
+    for pr in pull_requests:
+        created = datetime.fromisoformat(pr["createdAt"])
+        if (
+            pr.get("authorAssociation") not in _OUTSIDE_ROLES
+            or (pr.get("author") or {}).get("__typename") == "Bot"
+            or created < now - NEWCOMER_WINDOW
+        ):
+            continue
+        answered = _first_team_answer(pr)
+        if answered:
+            waits.append(max((answered - created).total_seconds() / 3600, 0))
+        elif now - created >= ANSWER_GRACE:
+            waits.append(float("inf"))
+    if len(waits) < MIN_PULL_REQUESTS:
+        return None
+    middle = sorted(waits)[(len(waits) - 1) // 2]
+    return -1 if middle == float("inf") else round(middle, 1)
 
 
 def contributing_guide(repo: str) -> str:

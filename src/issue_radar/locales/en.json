@@ -131,5 +131,9 @@
   "settings.github.signed_out": "You're not signed in to GitHub. Once you are, your languages are picked from your account and scans are faster. Run this in a terminal:",
   "settings.github.pick": "Pick my languages from GitHub",
   "settings.github.picked": "Picked the languages you use on GitHub. The list will update in a moment.",
-  "settings.error.github_languages": "I couldn't find a project of yours in a language we search. Pick your languages below."
+  "settings.error.github_languages": "I couldn't find a project of yours in a language we search. Pick your languages below.",
+  "signal.unanswered": "Most pull requests from outsiders go unanswered",
+  "signal.answers_same_day": "Usually answers outsiders' pull requests the same day",
+  "signal.answers_in_days.one": "Usually answers outsiders' pull requests within a day or so",
+  "signal.answers_in_days.other": "Usually answers outsiders' pull requests within {days} days"
 }

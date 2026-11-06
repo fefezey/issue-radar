@@ -21,17 +21,17 @@ Everything runs locally on your Mac. Your data and preferences stay on your comp
 
 ## What it does
 
-Issue Radar finds beginner-friendly issues in the languages you follow and drops the ones someone has already claimed. On first run it picks those languages itself, by looking at your GitHub account. Next to every issue you see what the project is about and whether it actually merges pull requests from outside the team, so you don't put work into a project that never answers.
+Issue Radar finds beginner-friendly issues in the languages you follow and drops the ones someone has already claimed. On first run it picks those languages itself, by looking at your GitHub account. Next to every issue you see what the project is about and whether it actually merges pull requests from outside the team. You also see how long newcomers usually wait for the team's first answer, so you don't put work into a project that never answers.
 
 If you have a local AI running, it summarizes issues and translates their titles into your language. When you decide to take an issue, it gives you a ready-made comment, the files worth looking at, and the project's setup and test commands. If you write your comment in another language, one click translates it into English. After that it follows your progress from your first comment to your merged pull request, and lets you know on your Mac when something important happens.
 
-Later on we'd like to show how quickly maintainers answer newcomers, add more interface languages ([you can add yours](#add-a-language)), support notifications on Linux and Windows, and send them through Telegram or Discord.
+Later on we'd like to add more interface languages ([you can add yours](#add-a-language)), support notifications on Linux and Windows, and send them through Telegram or Discord.
 
 ## How it works
 
 Every 10 minutes Issue Radar searches GitHub for new, open issues with a beginner label. From those it drops the ones that are assigned, have a linked pull request, were claimed in the comments, or belong to projects with fewer than 100 stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
 
-It also looks again at the issues it has already saved, and removes the ones that were closed or taken in the meantime. On each scan it gets to know a few projects as well: what the project does, and how many pull requests from outside the team it merged recently (bots don't count).
+It also looks again at the issues it has already saved, and removes the ones that were closed or taken in the meantime. On each scan it gets to know a few projects as well: what the project does, how many pull requests from outside the team it merged recently, and how long those outsiders usually waited for a first comment, review or merge from the team. Bots don't count, and a pull request that never got an answer counts as the longest wait.
 
 When Ollama is running, it writes a short summary for each new issue in the background, one at a time. Issues with a very short description are left alone, since the title already says enough. New issues are saved on your computer, you get a notification on your Mac, and the rest is up to you: open the page and pick the issue you want to work on.
 
