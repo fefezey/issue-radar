@@ -11,9 +11,11 @@
   · <a href="README.md">English</a>
 </p>
 
-Yeni başlayanlar için açılan GitHub işleri çok çabuk kapılıyor; çoğu zaman birkaç saat içinde. Issue Radar GitHub'ı senin yerine izliyor, henüz kimsenin almadığı yeni `good first issue`'ları buluyor ve sana hemen haber veriyor.
+Issue Radar, GitHub'da yeni başlayanlara uygun işleri bulmana yardım eder.
 
-Her şey kendi bilgisayarında çalışıyor: hesap açmana gerek yok, sunucu yok, verilerin senin diskinde kalıyor.
+GitHub'ı yeni işler için tarar, başkasının çoktan aldığı işleri ayıklar ve bakmaya değer bir şey bulduğunda sana haber verir. Hangi programlama dillerini takip edeceğini seçebilir, işleri projelere göre inceleyebilir ve katkılarını takip edebilirsin. İstersen Ollama üzerinden yapay zeka özetleri de alırsın; böylece bir işe başlamadan önce ne istendiğini anlarsın.
+
+Her şey kendi Mac'inde çalışır. Verilerin ve tercihlerin bilgisayarında kalır.
 
 ## Neler yapıyor
 

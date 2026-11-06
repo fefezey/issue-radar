@@ -11,9 +11,11 @@
   · <a href="README.tr.md">Türkçe</a>
 </p>
 
-Beginner-friendly GitHub issues get picked up fast — often within hours. Issue Radar watches GitHub for you, finds new `good first issue`s that nobody has claimed yet, and lets you know right away.
+Issue Radar helps developers find beginner-friendly issues on GitHub.
 
-It runs on your own computer: no account, no server, your choices stay on your disk.
+It scans GitHub for new issues, filters out tasks that are already claimed, and notifies you when it finds something worth looking at. You can choose which programming languages to follow, explore issues by project, and keep track of your contributions. It also offers optional AI summaries through Ollama, so you can understand an issue before getting started.
+
+Everything runs locally on your Mac. Your data and preferences stay on your computer.
 
 ## Features
 

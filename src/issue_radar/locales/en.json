@@ -51,7 +51,6 @@
   "ai.label": "AI summary",
   "ai.note": "Written by an AI model on your computer. It can be wrong; read the issue before you start.",
   "ai.pending": "Summary in progress…",
-  "new.subtitle": "Issues nobody has claimed, checked again on every scan.",
   "issue.taken": "Someone else is on it now",
   "issue.closed": "Closed",
   "toast.interested": "Added to Interested",

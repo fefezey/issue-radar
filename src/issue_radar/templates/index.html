@@ -184,7 +184,6 @@
 
     main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
     h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-    .subtitle { margin: -6px 0 4px; font-size: 13px; color: var(--muted); }
     .filters { display: flex; gap: 4px; margin: 0 0 4px; font-size: 13px; }
     .filters a {
       padding: 4px 10px;
@@ -647,7 +646,6 @@
     {% else %}
       <h1>{{ t('nav.new') if tab == 'new' else t('nav.interested') }}</h1>
       {% if tab == 'new' %}
-        <p class="subtitle">{{ t('new.subtitle') }}</p>
         {% if easy_count or easy_only %}
           <div class="filters" role="group" aria-label="{{ t('filter.label') }}">
             <a href="{{ url_for('index') }}" aria-current="{{ 'false' if easy_only else 'true' }}">{{ t('filter.all') }}</a>
