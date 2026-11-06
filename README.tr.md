@@ -19,38 +19,29 @@ Her şey kendi Mac'inde çalışır. Verilerin ve tercihlerin bilgisayarında ka
 
 ## Neler yapıyor
 
-- Takip ettiğin dillerde yeni başlayanlara uygun işleri bulur, başkasının çoktan aldığı işleri ayıklar.
-- Her projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini gösterir.
-- İşleri özetler ve başlıklarını bilgisayarında çalışan bir yapay zekayla senin diline çevirir (isteğe bağlı).
-- Bir işi almana ve başlamana yardım eder: yorum taslağı, bakılacak dosyalar, projenin kurulum ve test komutları.
-- İlk yorumundan PR'ın birleşmesine kadar ilerlemeni takip eder ve Mac'inde haber verir.
+Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve başkasının çoktan aldığı işleri ayıklar. Dilleri ilk açılışta senin GitHub hesabına bakarak kendisi seçer. Her işin yanında projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini görürsün, böylece cevap vermeyen bir projeye boşuna emek harcamazsın.
 
-### Planlananlar
+Bilgisayarında çalışan bir yapay zeka varsa işleri özetler ve başlıklarını senin diline çevirir. Bir işi almaya karar verdiğinde sana hazır bir yorum taslağı, bakman gereken dosyaları ve projenin kurulum ve test komutlarını gösterir. Yorumunu Türkçe yazarsan tek tuşla İngilizceye çevirebilirsin. Sonra ilk yorumundan PR'ının birleşmesine kadar ilerlemeni takip eder ve önemli bir şey olduğunda Mac'inde haber verir.
 
-- [ ] Bakımcıların yeni gelenlere ne kadar hızlı cevap verdiği
-- [ ] Daha fazla arayüz dili ([kendi dilini ekle](#dil-ekle))
-- [ ] Linux ve Windows bildirimleri
-- [ ] Telegram ve Discord bildirimleri
+İleride bakımcıların yeni gelenlere ne kadar hızlı cevap verdiğini göstermeyi, daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Linux ve Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
 
 ## Nasıl çalışıyor
 
-1. **Tarar.** 10 dakikada bir GitHub'da başlangıç etiketi taşıyan yeni, açık işleri arar.
-2. **Ayıklar.** Atanmış, bağlı PR'ı olan, yorumlarda alınmış ya da yıldızı az projelerden gelen işleri eler. Projelerin yıldız sayılarını bir gün boyunca hatırlar, böylece GitHub'a her taramada yeniden sormaz.
-3. **Yeniden kontrol eder.** Kayıtlı en fazla 20 işe tek bir istekle tekrar bakar; o arada kapanan ya da başkasının aldığı işleri listeden çıkarır.
-4. **Projeleri tanır.** Her taramada birkaç proje için, her birine günde en fazla bir kez bakar: proje ne işe yarıyor, son zamanlarda ekip dışından kaç PR birleştirmiş (botlar sayılmaz).
-5. **Özetler.** Ollama çalışıyorsa her yeni işe arka planda, sırayla kısa bir özet yazar. Açıklaması çok kısa işlere özet yazmaz, çünkü başlık zaten yeterince şey söylüyor.
-6. **Haber verir.** Yeni işleri bilgisayarına kaydeder ve Mac'inde bildirim gösterir.
-7. **Sen karar verirsin.** Web sayfasını açıp üzerinde çalışmak istediğin işi seçersin.
+Issue Radar 10 dakikada bir GitHub'da başlangıç etiketi taşıyan yeni, açık işleri arar. Bulduklarından atanmış olanları, bağlı bir PR'ı olanları, yorumlarda birinin "ben alıyorum" dediklerini ve 100 yıldızdan az projelere ait olanları eler. Projelerin yıldız sayılarını bir gün boyunca hatırladığı için GitHub'a her taramada yeniden sormaz.
+
+Daha önce kaydettiği işlere de düzenli olarak tekrar bakar ve o arada kapanan ya da başkasının aldığı işleri listeden çıkarır. Her taramada birkaç projeyi de tanımaya çalışır; projenin ne işe yaradığına ve son zamanlarda ekip dışından kaç PR birleştirdiğine bakar (botları saymaz).
+
+Ollama çalışıyorsa her yeni işe arka planda, sırayla kısa bir özet yazar. Açıklaması çok kısa olan işleri özetlemez, çünkü orada başlık zaten yeterince şey söylüyor. Yeni işleri bilgisayarına kaydeder, Mac'inde bildirim gösterir ve gerisini sana bırakır. Web sayfasını açıp üzerinde çalışmak istediğin işi sen seçersin.
 
 ## Kurulum
 
-[uv](https://docs.astral.sh/uv/) gerekiyor; doğru Python sürümünü de o kuruyor:
+Issue Radar'ı çalıştırmak için [uv](https://docs.astral.sh/uv/) gerekiyor. Doğru Python sürümünü de o kuruyor:
 
 ```bash
 brew install uv
 ```
 
-Sonra:
+Sonra projeyi indirip başlat:
 
 ```bash
 git clone https://github.com/fefezey/issue-radar.git
@@ -58,27 +49,25 @@ cd issue-radar
 uv run issue-radar
 ```
 
-Tarayıcıda **http://localhost:8000** adresini aç. İlk tarama bir dakika kadar sürebilir; sayfa kendiliğinden yenilenir.
+Ardından tarayıcıda **http://localhost:8000** adresini aç. İlk tarama bir dakika kadar sürebilir, sayfa kendiliğinden yenilenir.
 
 ### Mac açılınca kendiliğinden başlasın
 
-Her seferinde elle başlatmak zorunda kalmamak için macOS'un arka planda çalıştırmasını sağla:
+Programı her seferinde elle başlatmak istemiyorsan macOS'un onu arka planda çalıştırmasını sağlayabilirsin:
 
 ```bash
 uv run issue-radar install
 ```
 
-Artık Mac'ine her girişte kendiliğinden başlar; bir gün çökerse de kendini yeniden başlatır. Kayıtları `~/.issue-radar/issue-radar.log` dosyasında. Kapatmak için:
+Bundan sonra Mac'ine her girişte kendiliğinden başlar, bir gün çökerse de kendini yeniden başlatır. Neler yaptığını `~/.issue-radar/issue-radar.log` dosyasından okuyabilirsin. Program zaten çalışırken `uv run issue-radar` yazarsan ikinci bir kopya açılmaz, yalnızca sayfa açılır. Bu özelliği kapatmak istersen şunu çalıştır:
 
 ```bash
 uv run issue-radar uninstall
 ```
 
-Program zaten çalışırken `uv run issue-radar` yazarsan yalnızca sayfayı açar.
+### Yapay zeka özetleri
 
-### Yapay zeka özetleri (isteğe bağlı)
-
-Özetleri [Ollama](https://ollama.com) üzerinden `gemma3:4b` modeli yazıyor (yaklaşık 3 GB). Ücretsiz, ve işlerin metni bilgisayarından hiç çıkmıyor:
+Bu kısım isteğe bağlı. Özetleri ve çevirileri [Ollama](https://ollama.com) üzerinden yaklaşık 3 GB'lık `gemma3:4b` modeli yazıyor. Ücretsiz, ve işlerin metni bilgisayarından hiç çıkmıyor:
 
 ```bash
 brew install ollama
@@ -86,74 +75,39 @@ brew services start ollama
 ollama pull gemma3:4b
 ```
 
-Issue Radar Ollama'yı kendisi fark eder; özetlerin açık olup olmadığını **Ayarlar** sayfasında görebilirsin. Model 8 GB belleği olan bir Mac'te çalışıyor, ama özetler yavaş gelirse iOS Simülatörü gibi ağır uygulamaları kapat. Başka bir model kullanmak istersen `OLLAMA_MODEL` ayarını değiştir, örneğin: `OLLAMA_MODEL=qwen2.5:3b uv run issue-radar`.
-
-Özetleri küçük bir model yazıyor ve yanılabiliyor; işin aslı her zaman bir tık uzağında.
+Issue Radar Ollama'yı kendisi fark eder. Model 8 GB belleği olan bir Mac'te de çalışıyor, ama özetler yavaş gelirse iOS Simülatörü gibi ağır uygulamaları kapatmak işe yarar. Başka bir model denemek istersen başlatırken `OLLAMA_MODEL` ayarını değiştirebilirsin, örneğin `OLLAMA_MODEL=qwen2.5:3b uv run issue-radar` gibi. Özetleri küçük bir model yazdığı için arada yanılabiliyor; işin aslı her zaman bir tık uzağında.
 
 ### GitHub erişimi
 
-GitHub, giriş yapmadan saatte yalnızca 60 isteğe izin veriyor; bu yetmez. Issue Radar sırasıyla şunları kullanır:
-
-1. Ayarlanmışsa `GITHUB_TOKEN` ortam değişkenini,
-2. yoksa [GitHub CLI](https://cli.github.com/) girişini (`gh auth login`).
-
-Token'ın yalnızca herkese açık verileri okuyabilmesi yeterli.
+GitHub, giriş yapmadan saatte yalnızca 60 isteğe izin veriyor ve bu yetmiyor. Bu yüzden Issue Radar önce `GITHUB_TOKEN` ortam değişkenine bakar, o yoksa [GitHub CLI](https://cli.github.com/) girişini kullanır. En kolayı bir kere `gh auth login` çalıştırmak. Token'ın yalnızca herkese açık verileri okuyabilmesi yeterli.
 
 ### Bildirimler
 
-Bildirimler Issue Radar adı ve radar logosuyla gelir: program bunun için ilk bildirimde `~/.issue-radar/` klasöründe küçük bir yardımcı uygulama oluşturur. Nasıl göründüğünü görmek için **Ayarlar** sayfasındaki **Deneme bildirimi gönder** düğmesine bas. Bir şey görmüyorsan **Sistem Ayarları → Bildirimler** bölümünden **Issue Radar**'a izin ver.
+Bildirimler Issue Radar adı ve radar logosuyla gelir. Program bunun için ilk bildirimde `~/.issue-radar/` klasöründe küçük bir yardımcı uygulama oluşturur. Nasıl göründüğünü merak ediyorsan Ayarlar sayfasındaki **Deneme bildirimi gönder** düğmesine bas. Hiçbir şey görmüyorsan Sistem Ayarları'ndaki Bildirimler bölümünden Issue Radar'a izin vermen gerekiyor.
 
 ## Ayarlar
 
-Sayfadaki **Ayarlar** bölümünden **taranacak dilleri** seçebilirsin: Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin, Swift.
+Ayarlar sayfasında hangi dillerdeki işleri görmek istediğini seçersin. Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin ve Swift arasından istediğin kadarını işaretleyebilirsin.
 
-İlk açılışta diller GitHub hesabından seçilir: kendi projelerinin dilleri ve PR gönderdiğin projelerin dilleri (bunlar iki kat sayılır). **Dillerimi GitHub'dan seç** düğmesi bunu yeniden yapar. GitHub'a hiç bağlanmadıysan Python ve JavaScript kullanılır. Değişiklikler hemen uygulanır ve yeni bir tarama başlar.
+İlk açılışta dilleri senin yerine Issue Radar seçer. GitHub'daki kendi projelerine ve PR gönderdiğin projelere bakar, en çok kullandığın dilleri işaretler. PR gönderdiğin projeler iki kat sayılır, çünkü issue çözmek oraya daha yakın bir iş. Bunu sonradan **Dillerimi GitHub'dan seç** düğmesiyle tekrarlayabilirsin. GitHub'a hiç bağlanmadıysan Python ve JavaScript ile başlar. Yaptığın değişiklikler hemen uygulanır ve yeni bir tarama başlar.
 
-Yalnızca en az 100 yıldızı olan projeler gösterilir. Küçük projeler çoğu zaman sessizleşir ve ilk PR'ına kimse bakmayabilir.
+Yalnızca en az 100 yıldızı olan projeler gösterilir. Daha küçük projeler çoğu zaman sessizleşiyor ve ilk PR'ına kimse bakmayabiliyor.
 
-Şunlar şimdilik kodun içinde, `src/issue_radar/scanner.py` dosyasında:
-
-| Ne | Adı | Varsayılan |
-| --- | --- | --- |
-| Tarama sıklığı | `SCAN_INTERVAL` | 10 dakika |
-| Başarısız taramadan sonra tekrar deneme | `RETRY_INTERVAL` | 5 dakika |
-| Bildirim sıklığı | `NOTIFY_INTERVAL` | 1 saat |
-
-İşlerin ve tercihlerin `~/.issue-radar/issues.db` dosyasında duruyor. Sıfırdan başlamak istersen bu dosyayı silmen yeterli.
+Tarama sıklığı (10 dakika), başarısız bir taramadan sonra tekrar deneme süresi (5 dakika) ve bildirim sıklığı (saatte en fazla bir) şimdilik `src/issue_radar/scanner.py` dosyasının en üstünde duruyor; değiştirmek istersen oradan değiştirebilirsin. İşlerin ve tercihlerin `~/.issue-radar/issues.db` dosyasında saklanıyor. Sıfırdan başlamak istersen bu dosyayı silmen yeterli.
 
 ## Proje yapısı
 
-```
-src/issue_radar/
-├── __init__.py      tarayıcıyı ve web sayfasını başlatır
-├── github.py        GitHub'la konuşur: arama, yıldızlar, alınmış işler, senin PR'ların
-├── scanner.py       düzenli tarar ve ne zaman bildirim gideceğine karar verir
-├── ai.py            Ollama ile yapay zeka özetleri
-├── kinds.py         doküman, test ve çeviri işlerini tanır
-├── claiming.py      yorum taslağı ve katkı rehberlerini okuma
-├── guide.py         iş rehberi: kurulum ve test komutları, bakılacak dosyalar
-├── notify.py        Mac bildirimleri
-├── db.py            yerel SQLite veritabanı
-├── web.py           web sayfasının adresleri
-├── languages.py     aranabilecek diller ve görünen adları
-├── settings.py      ayarlar sayfasındaki ayarlar
-├── i18n.py          çeviriler
-├── locales/         her arayüz dili için bir JSON dosyası
-└── templates/
-    └── index.html   web sayfası
-```
+Kodun tamamı `src/issue_radar/` klasöründe. Program `__init__.py` ile başlar; bu dosya tarayıcıyı ve web sayfasını çalıştırır. `__main__.py` ve `service.py` ise programın Mac açılınca kendiliğinden başlamasını sağlar. GitHub'la konuşan her şey `github.py` içinde: arama, yıldız sayıları, alınmış işler ve senin PR'ların. `scanner.py` düzenli aralıklarla tarama yapar ve ne zaman bildirim gideceğine karar verir. Bildirimlerin kendisini `notify.py` gösterir.
+
+Yapay zeka özetleri ve çeviriler `ai.py` dosyasında. `kinds.py` doküman, test ve çeviri gibi kolay işleri tanır. `claiming.py` yorum taslağını hazırlar ve projelerin katkı rehberlerini okur. `guide.py` ise iş rehberini, yani kurulum ve test komutlarını ve bakılacak dosyaları çıkarır.
+
+Veriler `db.py` ile yerel bir SQLite veritabanında tutulur. Web sayfasının adresleri `web.py` içinde, sayfanın kendisi `templates/index.html` dosyasında. Ayarlar `settings.py`, aranabilecek diller `languages.py` içinde. Arayüz çevirilerini `i18n.py` yönetir; her arayüz dili için `locales/` klasöründe bir JSON dosyası var.
 
 ## Katkı
 
-Katkılarını bekliyoruz; ne de olsa bu, ilk katkısını yapacaklar için yapılmış bir araç. Başlamak için iyi yerler:
+Katkılarını bekliyoruz; ne de olsa bu, ilk katkısını yapacaklar için yapılmış bir araç. Başlamak için en kolay yol arayüze yeni bir dil eklemek. Bunun için kod bilmen gerekmiyor, nasıl yapılacağı aşağıda anlatılıyor.
 
-- **Bir dil ekle.** Aşağıda anlatılıyor; kod bilmen gerekmiyor.
-- **Alınmış işleri daha iyi tanı.** `github.py` içindeki `CLAIM_PHRASES`, insanların bir işi alırken yazdığı cümleleri listeliyor. Karşına çıkanları ekleyebilirsin.
-- **Daha fazla kolay iş türü yakala.** `kinds.py`, başlıklardan ve etiketlerden doküman, test ve çeviri işlerini buluyor. Kaçırdığı ya da yanlış eşleştirdiği bir iş mi gördün? Kuralları düzelt.
-- **Linux ya da Windows bildirimleri.** `notify.py` şimdilik yalnızca macOS'u destekliyor.
-- **[Planlananlar](#planlananlar) listesindeki herhangi bir madde.**
-
-Büyük bir değişiklik düşünüyorsan önce bir issue aç.
+Biraz kodla uğraşmak istersen `github.py` içindeki `CLAIM_PHRASES` listesine bakabilirsin. Bu liste, insanların bir işi alırken yazdığı cümleleri tutuyor; karşına çıkan yeni kalıpları ekleyebilirsin. `kinds.py` da başlıklardan ve etiketlerden kolay işleri tanımaya çalışıyor. Kaçırdığı ya da yanlış tanıdığı bir iş görürsen kuralları düzeltebilirsin. `notify.py` şimdilik yalnızca macOS'ta çalışıyor, Linux ya da Windows desteği eklemek de güzel bir katkı olur. Büyük bir değişiklik düşünüyorsan önce bir issue açıp konuşalım.
 
 ### Testleri çalıştır
 
@@ -161,16 +115,13 @@ Büyük bir değişiklik düşünüyorsan önce bir issue aç.
 uv run pytest
 ```
 
-Testler için internet, GitHub token'ı ya da Ollama gerekmiyor: GitHub'ın ve modelin cevapları testlerin içinde taklit ediliyor, her test de kendi boş veritabanını kullanıyor. Testler her push'ta ve her PR'da otomatik çalışıyor.
+Testler için internet, GitHub token'ı ya da Ollama gerekmiyor. GitHub'ın ve modelin cevapları testlerin içinde taklit ediliyor, her test de kendi boş veritabanını kullanıyor. Testler her push'ta ve her PR'da GitHub'da otomatik olarak da çalışıyor.
 
 ### Dil ekle
 
-1. `src/issue_radar/locales/en.json` dosyasını kendi dil kodunla adlandırılmış yeni bir dosyaya kopyala, örneğin `de.json`.
-2. Sağdaki metinleri çevir. Soldaki anahtarlara ve `{süslü parantez}` içindeki yer tutuculara dokunma.
-3. Sayıyla değişen kelimeler için `.one` ve `.other` anahtarlarını kullan, örneğin `"issue.stars.one": "{stars} star"` ve `"issue.stars.other": "{stars} stars"`. Dilinde kelime sayıyla değişmiyorsa yalnızca `.other` yeterli.
-4. `uv run issue-radar` ile programı başlat ve sağ üst köşeden dilini seç.
+Yeni bir arayüz dili eklemek için `src/issue_radar/locales/en.json` dosyasını kopyala ve kopyaya kendi dil kodunu ver, Almanca için `de.json` gibi. Sonra sağ taraftaki metinleri çevir. Soldaki anahtarlara ve `{süslü parantez}` içindeki yer tutuculara dokunma, program onları kullanıyor.
 
-Çevirmediğin metinler İngilizce görünür.
+Bazı kelimeler sayıya göre değişir. İngilizcede "1 star" ama "3 stars" denir. Bunun için `.one` ve `.other` ile biten iki anahtar var. Senin dilinde kelime sayıyla değişmiyorsa yalnızca `.other` yeterli. İşin bitince `uv run issue-radar` ile programı başlat ve sağ üst köşeden dilini seç. Çevirmediğin metinler İngilizce görünür.
 
 ## Lisans
 

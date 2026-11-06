@@ -19,38 +19,29 @@ Everything runs locally on your Mac. Your data and preferences stay on your comp
 
 ## What it does
 
-- Finds new beginner-friendly issues in the languages you follow, and leaves out the ones someone has already claimed.
-- Shows what each project is, and whether it merges pull requests from people outside its team.
-- Summarizes issues and translates their titles into your language with a local AI model (optional).
-- Helps you claim an issue and get started: a comment draft, the files to look at, and the project's setup and test commands.
-- Follows your progress from your first comment to a merged pull request, and lets you know on your Mac.
+Issue Radar finds beginner-friendly issues in the languages you follow and drops the ones someone has already claimed. On first run it picks those languages itself, by looking at your GitHub account. Next to every issue you see what the project is about and whether it actually merges pull requests from outside the team, so you don't put work into a project that never answers.
 
-### Planned
+If you have a local AI running, it summarizes issues and translates their titles into your language. When you decide to take an issue, it gives you a ready-made comment, the files worth looking at, and the project's setup and test commands. If you write your comment in another language, one click translates it into English. After that it follows your progress from your first comment to your merged pull request, and lets you know on your Mac when something important happens.
 
-- [ ] How quickly maintainers answer newcomers
-- [ ] More interface languages — [add yours](#add-a-language)
-- [ ] Notifications on Linux and Windows
-- [ ] Telegram and Discord notifications
+Later on we'd like to show how quickly maintainers answer newcomers, add more interface languages ([you can add yours](#add-a-language)), support notifications on Linux and Windows, and send them through Telegram or Discord.
 
 ## How it works
 
-1. **Scan** — every 10 minutes, search GitHub for new open issues with a beginner label.
-2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with too few stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
-3. **Re-check** — look again at up to 20 saved issues in a single request, and drop the ones that have been closed or taken since.
-4. **Learn about projects** — for a few projects per scan, at most once a day each: what the project is, and how many outsiders' pull requests it merged lately (bots don't count).
-5. **Summarize** — if Ollama is running, write a short summary for each new issue, one at a time in the background. Issues with a very short description get none: the title already says it.
-6. **Notify** — save new issues locally and show a Mac notification.
-7. **Decide** — open the web page and pick what you want to work on.
+Every 10 minutes Issue Radar searches GitHub for new, open issues with a beginner label. From those it drops the ones that are assigned, have a linked pull request, were claimed in the comments, or belong to projects with fewer than 100 stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
+
+It also looks again at the issues it has already saved, and removes the ones that were closed or taken in the meantime. On each scan it gets to know a few projects as well: what the project does, and how many pull requests from outside the team it merged recently (bots don't count).
+
+When Ollama is running, it writes a short summary for each new issue in the background, one at a time. Issues with a very short description are left alone, since the title already says enough. New issues are saved on your computer, you get a notification on your Mac, and the rest is up to you: open the page and pick the issue you want to work on.
 
 ## Getting started
 
-You need [uv](https://docs.astral.sh/uv/) (it installs the right Python for you):
+Issue Radar needs [uv](https://docs.astral.sh/uv/), which also installs the right Python version for you:
 
 ```bash
 brew install uv
 ```
 
-Then:
+Then download the project and start it:
 
 ```bash
 git clone https://github.com/fefezey/issue-radar.git
@@ -58,27 +49,25 @@ cd issue-radar
 uv run issue-radar
 ```
 
-Open **http://localhost:8000**. The first scan can take about a minute; the page refreshes by itself.
+Now open **http://localhost:8000** in your browser. The first scan can take about a minute, and the page refreshes by itself.
 
 ### Start it when you log in
 
-So you don't have to start it by hand, let macOS run it in the background:
+If you'd rather not start it by hand every time, let macOS run it in the background:
 
 ```bash
 uv run issue-radar install
 ```
 
-It starts whenever you log in, and again by itself if it ever crashes. Its log is in `~/.issue-radar/issue-radar.log`. To turn this off:
+From then on it starts every time you log in to your Mac, and restarts itself if it ever crashes. You can read what it's doing in `~/.issue-radar/issue-radar.log`. Running `uv run issue-radar` while it's already running doesn't start a second copy, it just opens the page. To turn this off again, run:
 
 ```bash
 uv run issue-radar uninstall
 ```
 
-Running `uv run issue-radar` while it's already running just opens the page.
+### AI summaries
 
-### AI summaries (optional)
-
-Summaries are made by [Ollama](https://ollama.com) with the `gemma3:4b` model (about 3 GB). It's free, and the issue text never leaves your computer:
+This part is optional. Summaries and translations are written by the `gemma3:4b` model through [Ollama](https://ollama.com), which takes about 3 GB. It's free, and the text of the issues never leaves your computer:
 
 ```bash
 brew install ollama
@@ -86,74 +75,39 @@ brew services start ollama
 ollama pull gemma3:4b
 ```
 
-Issue Radar picks it up on its own; **Settings** shows whether summaries are on. The model runs fine on a Mac with 8 GB of memory, but close heavy apps (like the iOS Simulator) if summaries are slow. To use another model, set `OLLAMA_MODEL`, for example `OLLAMA_MODEL=qwen2.5:3b uv run issue-radar`.
-
-Summaries are written by a small model and can be wrong — the original issue is always one click away.
+Issue Radar notices Ollama by itself. The model runs on a Mac with 8 GB of memory, but if summaries come in slowly, closing heavy apps like the iOS Simulator helps. To try another model, set `OLLAMA_MODEL` when you start it, as in `OLLAMA_MODEL=qwen2.5:3b uv run issue-radar`. The summaries come from a small model and can be wrong now and then, so the real issue is always one click away.
 
 ### GitHub access
 
-Without signing in, GitHub allows only 60 requests an hour, which is not enough. Issue Radar uses, in this order:
-
-1. the `GITHUB_TOKEN` environment variable, if set, or
-2. your [GitHub CLI](https://cli.github.com/) login (`gh auth login`).
-
-The token only needs to read public data.
+Without signing in, GitHub allows only 60 requests an hour, which isn't enough. So Issue Radar first looks for a `GITHUB_TOKEN` environment variable, and if there isn't one, uses your [GitHub CLI](https://cli.github.com/) login. The easiest way is to run `gh auth login` once. The token only needs to read public data.
 
 ### Notifications
 
-Notifications show Issue Radar's name and radar icon: on first use it builds a tiny helper app for that in `~/.issue-radar/`. To see one, use **Send a test notification** on the Settings page. If nothing shows up, allow notifications for **Issue Radar** in **System Settings → Notifications**.
+Notifications show Issue Radar's name and radar icon. To make that work, it builds a tiny helper app in `~/.issue-radar/` the first time it notifies you. If you're curious what they look like, press **Send a test notification** on the Settings page. If nothing shows up, allow notifications for Issue Radar in the Notifications section of System Settings.
 
 ## Configuration
 
-Open **Settings** on the page to choose the **languages to search**: Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin, Swift.
+On the Settings page you choose which languages you want to see issues in. You can tick as many as you like from Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin and Swift.
 
-On first run they're picked from your GitHub account: the languages of your own repositories and, counted double, of the projects you've sent pull requests to. **Pick my languages from GitHub** does it again; if you've never signed in, Python and JavaScript are used. Changes apply right away, and a new scan starts immediately.
+On first run Issue Radar picks them for you. It looks at your own projects on GitHub and the projects you've sent pull requests to, and ticks the languages you use most. Projects you've sent pull requests to count double, because fixing issues there is closer to what you'll be doing. You can do this again later with **Pick my languages from GitHub**. If you've never signed in to GitHub, it starts with Python and JavaScript. Changes apply right away, and a new scan starts immediately.
 
-Only projects with at least 100 stars are shown: smaller ones often go quiet, and a first PR there may never be reviewed.
+Only projects with at least 100 stars are shown. Smaller projects often go quiet, and a first pull request there may never be looked at.
 
-These are still set in the code, in `src/issue_radar/scanner.py`:
-
-| What | Name | Default |
-| --- | --- | --- |
-| Scan interval | `SCAN_INTERVAL` | 10 minutes |
-| Retry after a failed scan | `RETRY_INTERVAL` | 5 minutes |
-| Notification interval | `NOTIFY_INTERVAL` | 1 hour |
-
-Your issues and choices are stored in `~/.issue-radar/issues.db`. Delete this file to start over.
+How often it scans (10 minutes), how long it waits after a failed scan (5 minutes) and how often it notifies you (at most once an hour) live at the top of `src/issue_radar/scanner.py` for now, if you want to change them. Your issues and preferences are stored in `~/.issue-radar/issues.db`. Delete that file if you want to start from scratch.
 
 ## Project structure
 
-```
-src/issue_radar/
-├── __init__.py      starts the scanner and the web page
-├── github.py        talks to GitHub: search, star counts, claimed issues, your pull requests
-├── scanner.py       scans on a schedule and decides when to notify
-├── ai.py            AI summaries through Ollama
-├── kinds.py         spots docs, test and translation issues
-├── claiming.py      the comment draft, and reading contributing guides
-├── guide.py         the issue guide: setup and test commands, files to look at
-├── notify.py        Mac notifications
-├── db.py            the local SQLite database
-├── web.py           the web page's routes
-├── languages.py     languages you can search, and their display names
-├── settings.py      settings from the settings page
-├── i18n.py          translations
-├── locales/         one JSON file per interface language
-└── templates/
-    └── index.html   the web page
-```
+All of the code lives in `src/issue_radar/`. The program starts in `__init__.py`, which runs the scanner and the web page, while `__main__.py` and `service.py` take care of starting it when you log in. Everything that talks to GitHub is in `github.py`: searching, star counts, claimed issues and your pull requests. `scanner.py` scans on a schedule and decides when a notification goes out, and `notify.py` shows the notifications themselves.
+
+AI summaries and translations are in `ai.py`. `kinds.py` recognizes easy issues such as docs, tests and translations. `claiming.py` prepares the comment draft and reads projects' contributing guides, and `guide.py` puts together the issue guide, with setup and test commands and the files worth looking at.
+
+Data is kept in a local SQLite database through `db.py`. The web page's addresses are in `web.py`, and the page itself is `templates/index.html`. Settings are in `settings.py` and the searchable languages in `languages.py`. `i18n.py` handles the interface translations, with one JSON file per interface language in `locales/`.
 
 ## Contributing
 
-Contributions are welcome — this is a tool for first-time contributors, after all. Good places to start:
+Contributions are welcome; after all, this is a tool for people making their first ones. The easiest place to start is adding a language to the interface. You don't need to know how to code for that, and it's explained below.
 
-- **Add a language** — see below. No coding needed.
-- **Improve claim detection.** `CLAIM_PHRASES` in `github.py` lists the phrases people use to claim an issue. Add the ones you see in the wild.
-- **Spot more kinds of easy work.** `kinds.py` finds docs, test and translation issues from titles and labels. Missed one, or found a wrong match? Adjust the rules.
-- **Linux or Windows notifications.** `notify.py` only supports macOS.
-- **Anything from the [Planned](#planned) list.**
-
-Open an issue first if you plan a bigger change.
+If you'd like to touch some code, have a look at `CLAIM_PHRASES` in `github.py`. It holds the sentences people write when they take an issue, and you can add new ones you come across. `kinds.py` tries to recognize easy issues from their titles and labels, so if you see one it missed or got wrong, you can fix the rules. `notify.py` only works on macOS for now, and adding Linux or Windows support would be a great contribution too. If you're thinking of a bigger change, please open an issue first so we can talk about it.
 
 ### Run the tests
 
@@ -161,16 +115,13 @@ Open an issue first if you plan a bigger change.
 uv run pytest
 ```
 
-The tests need no network, no GitHub token and no Ollama: GitHub's and the model's answers are made up in the tests, and every test gets its own empty database. They run on every push and pull request.
+The tests don't need internet access, a GitHub token or Ollama. GitHub's and the model's answers are made up inside the tests, and each test uses its own empty database. They also run automatically on GitHub for every push and pull request.
 
 ### Add a language
 
-1. Copy `src/issue_radar/locales/en.json` to a file named after your language code, for example `de.json`.
-2. Translate the values on the right. Keep the keys on the left and anything in `{curly braces}` as they are.
-3. For words that change with a number, use `.one` and `.other` keys, like `"issue.stars.one": "{stars} star"` and `"issue.stars.other": "{stars} stars"`. If your language doesn't change, `.other` alone is enough.
-4. Run `uv run issue-radar` and pick your language in the top-right corner.
+To add an interface language, copy `src/issue_radar/locales/en.json` to a new file named after your language code, like `de.json` for German. Then translate the texts on the right. Leave the keys on the left and the placeholders in `{curly braces}` as they are, since the program uses them.
 
-Any key you leave out falls back to English.
+Some words change with a number, like "1 star" but "3 stars". For those there are two keys, ending in `.one` and `.other`. If words in your language don't change, `.other` alone is enough. When you're done, start the program with `uv run issue-radar` and pick your language in the top right corner. Anything you haven't translated shows up in English.
 
 ## License
 
@@ -178,4 +129,4 @@ Any key you leave out falls back to English.
 
 ---
 
-<p align="center"><em>Contribute more. Search less.</em></p>
+<p align="center"><em>More contributing, less searching.</em></p>
