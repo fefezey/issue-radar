@@ -162,7 +162,7 @@ def issue_body(url: str) -> str:
 
 # What we ask GitHub about each issue we already have, to see if it's still free.
 _CHECK_FIELDS = """
-fragment Check on Issue {
+fragment F on Issue {
   state
   labels(first: 20) { nodes { name } }
   assignees(first: 10) { nodes { login } }
@@ -172,12 +172,12 @@ fragment Check on Issue {
 """
 
 
-def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[str]]]:
-    """Look again at issues we saved earlier, all in one request.
+def _ask_about_issues(urls: dict[int, str], fragment: str) -> tuple[str, dict[int, dict | None]]:
+    """Ask GitHub about many issues in one GraphQL request.
 
-    Returns, by issue id, "open", "taken" or "closed", and the issue's
-    current labels. Your own assignment, pull request or comment doesn't
-    count as "taken". Issues GitHub couldn't answer about are left out.
+    `fragment` names the fields, as `fragment F on Issue { ... }`. Returns your
+    login and, by issue id, the issue's fields (None if the issue is gone).
+    Issues GitHub couldn't answer about are left out, to try again next time.
     """
     aliases: dict[str, int] = {}
     parts = []
@@ -186,26 +186,34 @@ def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[s
         aliases[f"i{i}"] = issue_id
         parts.append(
             f"i{i}: repository(owner: {json.dumps(owner)}, name: {json.dumps(name)}) "
-            f"{{ issue(number: {int(number)}) {{ ...Check }} }}"
+            f"{{ issue(number: {int(number)}) {{ ...F }} }}"
         )
-    query = "query { viewer { login } " + " ".join(parts) + " }" + _CHECK_FIELDS
+    query = "query { viewer { login } " + " ".join(parts) + " }" + fragment
 
     with _client() as client:
         response = client.post("/graphql", json={"query": query})
         response.raise_for_status()
     data = response.json().get("data") or {}
     me = (data.get("viewer") or {}).get("login", "")
+    issues = {issue_id: data[alias].get("issue") for alias, issue_id in aliases.items() if data.get(alias)}
+    return me, issues
+
+
+def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[str]]]:
+    """Look again at issues we saved earlier, all in one request.
+
+    Returns, by issue id, "open", "taken" or "closed", and the issue's
+    current labels. Your own assignment, pull request or comment doesn't
+    count as "taken". Issues GitHub couldn't answer about are left out.
+    """
+    me, answers = _ask_about_issues(urls, _CHECK_FIELDS)
 
     def someone_else(actor: dict | None) -> bool:
         return (actor or {}).get("login") not in (me, None)
 
     results: dict[int, str] = {}
     labels: dict[int, list[str]] = {}
-    for alias, issue_id in aliases.items():
-        repo = data.get(alias)
-        if repo is None:  # GitHub didn't answer for this one; try again next time
-            continue
-        issue = repo.get("issue")
+    for issue_id, issue in answers.items():
         if issue is not None:
             labels[issue_id] = [label["name"] for label in issue["labels"]["nodes"]]
         if issue is None or issue["state"] == "CLOSED":  # closed, deleted or moved
@@ -279,3 +287,56 @@ def contributing_guide(repo: str) -> str:
         text = client.get(guide["url"], headers={"Accept": "application/vnd.github.raw"})
         text.raise_for_status()
         return text.text
+
+
+# What we ask about issues you're interested in, to follow your progress.
+_TRACK_FIELDS = """
+fragment F on Issue {
+  assignees(first: 10) { nodes { login } }
+  comments(last: 50) { nodes { author { login } } }
+  closedByPullRequestsReferences(first: 10, includeClosedPrs: true) {
+    nodes { number url state author { login } }
+  }
+  timelineItems(itemTypes: [CROSS_REFERENCED_EVENT], last: 20) {
+    nodes { ... on CrossReferencedEvent { source { ... on PullRequest { number url state author { login } } } } }
+  }
+}
+"""
+
+# Where you are with an issue, in order.
+STAGES = ["commented", "assigned", "pr_open", "merged"]
+
+
+def track_issues(urls: dict[int, str]) -> dict[int, dict]:
+    """How far you've got with each issue, all in one request.
+
+    Returns, by issue id, {"stage": one of STAGES or None, "pr_url": your
+    pull request's address or None}. Your pull requests count when they are
+    linked to the issue ("Fixes #12") or mention it.
+    """
+    me, answers = _ask_about_issues(urls, _TRACK_FIELDS)
+    progress: dict[int, dict] = {}
+    for issue_id, issue in answers.items():
+        if issue is None:
+            continue
+        linked = issue["closedByPullRequestsReferences"]["nodes"]
+        mentioned = [item.get("source") or {} for item in issue["timelineItems"]["nodes"]]
+        mine = [
+            pr for pr in linked + mentioned
+            if pr.get("number") and (pr.get("author") or {}).get("login") == me
+        ]
+        merged = [pr for pr in mine if pr["state"] == "MERGED"]
+        still_open = [pr for pr in mine if pr["state"] == "OPEN"]
+
+        if merged:
+            stage, pr = "merged", merged[0]
+        elif still_open:
+            stage, pr = "pr_open", still_open[0]
+        elif any(a["login"] == me for a in issue["assignees"]["nodes"]):
+            stage, pr = "assigned", None
+        elif any((c["author"] or {}).get("login") == me for c in issue["comments"]["nodes"]):
+            stage, pr = "commented", None
+        else:
+            stage, pr = None, None
+        progress[issue_id] = {"stage": stage, "pr_url": pr["url"] if pr else None}
+    return progress

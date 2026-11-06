@@ -267,6 +267,13 @@
     .badge.known { color: var(--muted); }
     .badge.known::before { background: var(--muted); border-radius: 2px; }
     .badge.plain::before { content: none; }
+    /* Your progress on an interested issue. */
+    .progress { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+    .progress li { padding: 2px 10px; border-radius: 999px; background: var(--raised); color: var(--muted); }
+    .progress li.done { background: var(--ok-bg); color: var(--ok); }
+    .progress li[aria-current="step"] { font-weight: 600; box-shadow: inset 0 0 0 1px var(--ok-dot); }
+    .next { margin: 0; font-size: 13px; color: var(--text-2); }
+
     /* A project and its issues. */
     .project { display: flex; flex-direction: column; gap: 12px; }
     .project + .project { margin-top: 12px; }
@@ -661,11 +668,37 @@
               <span class="sep" aria-hidden="true">·</span>
             {% endif %}
             <span>{{ issue.created_at | ago }}</span>
-            {% if tab == 'interested' and issue.availability in ('taken', 'closed') %}
+            {% if tab == 'interested' and issue.availability in ('taken', 'closed') and issue.stage != 'merged' %}
               <span class="badge gone">{{ t('issue.' ~ issue.availability) }}</span>
             {% endif %}
           </div>
           <h2 lang="en" title="{{ issue.title }}"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
+
+          {% if tab == 'interested' %}
+            {# How far you've got, read from GitHub on every scan. #}
+            {% set steps = ['commented', 'assigned', 'pr_open', 'merged'] %}
+            {% set reached = steps.index(issue.stage) if issue.stage in steps else -1 %}
+            {% set days = issue.stage_changed_at | days_since %}
+            <ol class="progress" aria-label="{{ t('stage.label') }}">
+              {% for step in steps %}
+                <li class="{{ 'done' if loop.index0 <= reached }}" {% if loop.index0 == reached %}aria-current="step"{% endif %}>{{ t('stage.' ~ step) }}</li>
+              {% endfor %}
+            </ol>
+            <p class="next">
+              {% if issue.stage == 'merged' %}
+                {{ t('next.merged') }}
+              {% elif issue.stage == 'pr_open' %}
+                {{ t('next.pr_open') }}
+              {% elif issue.stage == 'assigned' %}
+                {% if days >= 7 %}{{ t('next.assigned_slow', days) }}{% else %}{{ t('next.assigned') }}
+                  <code>Fixes #{{ issue.url.rsplit('/', 1)[1] }}</code>{% endif %}
+              {% elif issue.stage == 'commented' %}
+                {{ t('next.commented_slow', days) if days >= 3 else t('next.commented') }}
+              {% else %}
+                {{ t('next.none') }}
+              {% endif %}
+            </p>
+          {% endif %}
 
           {% if issue.summary %}
             <div class="summary">
@@ -693,8 +726,15 @@
             </div>
           {% else %}
             <div class="actions">
-              <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
-              <button type="button" class="btn" data-draft="{{ issue.id }}">{{ t('action.draft') }}</button>
+              {% if issue.pr_url %}
+                <a class="btn primary" href="{{ issue.pr_url }}" target="_blank" rel="noopener">{{ t('action.view_pr') }}</a>
+                <a class="btn" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
+              {% else %}
+                <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
+                {% if not issue.stage %}
+                  <button type="button" class="btn" data-draft="{{ issue.id }}">{{ t('action.draft') }}</button>
+                {% endif %}
+              {% endif %}
               <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}" data-action="release">
                 <input type="hidden" name="tab" value="interested">
                 <button class="btn">{{ t('action.release') }}</button>

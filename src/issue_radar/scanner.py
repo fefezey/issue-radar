@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 from issue_radar import ai, db, settings
 import httpx
 
-from issue_radar.github import check_issues, contributed_repos, find_issues, has_token, repo_info
-from issue_radar.i18n import DEFAULT_LANGUAGE
-from issue_radar.notify import notify_new_issues
+from issue_radar.github import check_issues, contributed_repos, find_issues, has_token, repo_info, track_issues
+from issue_radar.i18n import DEFAULT_LANGUAGE, translate
+from issue_radar.notify import notify, notify_new_issues
 
 SCAN_INTERVAL = 10 * 60  # seconds between scans
 RETRY_INTERVAL = 5 * 60  # after a failed scan (e.g. GitHub rate limit), try again sooner
@@ -18,6 +18,7 @@ MIN_SCAN_GAP = 60  # even when woken early (settings saved), wait this long afte
 CONTRIBUTIONS_MAX_AGE = timedelta(days=1)  # look up your own pull requests again after this
 
 RECHECK_BATCH = 20  # saved issues checked again on GitHub after each scan, in one request
+TRACK_BATCH = 30  # interested issues followed per scan, in one request
 REPO_INFO_BATCH = 8  # projects whose description and newcomer signal are looked up per scan
 REPO_INFO_MAX_AGE = timedelta(days=1)
 
@@ -56,6 +57,40 @@ def recheck() -> None:
         return
     with db.connect() as conn:
         db.set_availability(conn, results, labels)
+        lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
+    # An issue you wanted has just been taken by someone else: tell you now.
+    for issue in issues:
+        if issue["status"] == "interested" and results.get(issue["id"]) == "taken":
+            notify("Issue Radar", translate(lang, "notify.taken"), issue["title"])
+
+
+def track() -> None:
+    """Follow the issues you're interested in: commented, assigned, pull
+    request opened, merged. Tells you when you're assigned or merged."""
+    if not status["has_token"]:
+        return
+    with db.connect() as conn:
+        issues = db.issues_to_track(conn, TRACK_BATCH)
+        lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
+    if not issues:
+        return
+    try:
+        progress = track_issues({issue["id"]: issue["url"] for issue in issues})
+    except (httpx.HTTPError, ValueError, KeyError) as error:
+        print(f"Katkı takibi yapılamadı: {error}", flush=True)
+        return
+
+    reached = []
+    with db.connect() as conn:
+        for issue in issues:
+            now = progress.get(issue["id"])
+            if now is None:
+                continue
+            if now["stage"] != issue["stage"] and now["stage"] in ("assigned", "merged"):
+                reached.append((issue, now["stage"]))
+            db.save_progress(conn, issue["id"], now["stage"], now["pr_url"])
+    for issue, stage in reached:
+        notify("Issue Radar", translate(lang, f"notify.{stage}"), issue["title"])
 
 
 def refresh_repo_info() -> None:
@@ -153,6 +188,7 @@ def scan_forever() -> None:
             if not error:
                 time.sleep(SEARCH_PAUSE)
                 recheck()
+                track()
                 refresh_repo_info()
         except Exception as e:  # keep scanning even if one scan fails
             error = e

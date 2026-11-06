@@ -55,6 +55,13 @@ def ago(timestamp: str) -> str:
     return t("time.days", int(seconds // 86400))
 
 
+@app.template_filter("days_since")
+def days_since(timestamp: str | None) -> int:
+    if not timestamp:
+        return 0
+    return (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).days
+
+
 @app.template_filter("code")
 def code(text: str) -> Markup:
     """Show `backticked` parts of AI summaries as code. Everything else stays plain text."""

@@ -56,6 +56,9 @@ ADDED_ISSUE_COLUMNS = {
     "availability": "TEXT",  # open | taken | closed, from the last check on GitHub
     "checked_at": "TEXT",  # when we last checked that
     "labels": "TEXT",  # the issue's GitHub labels, as a JSON list
+    "stage": "TEXT",  # for interested issues: commented | assigned | pr_open | merged
+    "stage_changed_at": "TEXT",
+    "pr_url": "TEXT",  # your pull request for it, if any
 }
 
 # Issues that are no longer free on GitHub are dropped from "new".
@@ -175,13 +178,35 @@ def issues_to_recheck(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]
     """Issues still shown as free, the ones checked longest ago first."""
     return conn.execute(
         f"""
-        SELECT id, url FROM issues
+        SELECT id, url, title, status FROM issues
         WHERE status IN ('new', 'interested') AND {_STILL_FREE}
         ORDER BY labels IS NOT NULL, checked_at IS NOT NULL, checked_at
         LIMIT ?
         """,
         (limit,),
     ).fetchall()
+
+
+def issues_to_track(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]:
+    """Issues you're interested in, to follow how far you've got."""
+    return conn.execute(
+        "SELECT id, url, title, stage FROM issues WHERE status = 'interested' ORDER BY found_at DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+
+
+def save_progress(conn: sqlite3.Connection, issue_id: int, stage: str | None, pr_url: str | None) -> None:
+    """Save where you are with an issue; remember when that last changed."""
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        UPDATE issues
+        SET stage_changed_at = CASE WHEN stage IS ? THEN COALESCE(stage_changed_at, ?) ELSE ? END,
+            stage = ?, pr_url = ?
+        WHERE id = ?
+        """,
+        (stage, now, now, stage, pr_url, issue_id),
+    )
 
 
 def set_availability(conn: sqlite3.Connection, results: dict[int, str], labels: dict[int, list[str]]) -> None:

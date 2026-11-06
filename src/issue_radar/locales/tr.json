@@ -78,5 +78,21 @@
   "draft.copy": "Kopyala ve GitHub'da aç",
   "draft.copy_anyway": "Yine de kopyala",
   "draft.copied": "Kopyalandı",
-  "draft.close": "Kapat"
+  "draft.close": "Kapat",
+  "stage.label": "İlerlemen",
+  "stage.commented": "Yorum yazdın",
+  "stage.assigned": "Atandın",
+  "stage.pr_open": "PR açtın",
+  "stage.merged": "Birleşti",
+  "next.none": "Sıradaki adım: GitHub'da yorum yaz ve işi iste.",
+  "next.commented": "Sıradaki adım: bakımcının seni atamasını bekle.",
+  "next.commented_slow.other": "{count} gündür cevap yok. Kısa ve nazik bir hatırlatma yazabilirsin.",
+  "next.assigned": "Sıradaki adım: kodu yaz ve PR aç. PR'ın bu işe bağlanması için açıklamasına şunu yaz:",
+  "next.assigned_slow.other": "{count} gün önce atandın ve henüz PR yok. Vazgeçtiysen bunu bir yorumla belirt ki başkası alabilsin.",
+  "next.pr_open": "PR'ın inceleniyor. Gelen yorumlara cevap ver.",
+  "next.merged": "Tebrikler, katkın birleşti!",
+  "action.view_pr": "PR'ını aç",
+  "notify.assigned": "Bu işe atandın",
+  "notify.merged": "PR'ın birleşti!",
+  "notify.taken": "İlgilendiğin işi başkası aldı"
 }
