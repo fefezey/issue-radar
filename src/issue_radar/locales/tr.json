@@ -48,7 +48,7 @@
   "new.subtitle": "Kimsenin almadığı işler; her taramada yeniden kontrol ediliyor.",
   "issue.taken": "Artık başkası alıyor",
   "issue.closed": "Kapandı",
-  "toast.interested": "İlgilendiklerim'e eklendi. İşi almak için GitHub'da yorum yaz.",
+  "toast.interested": "İlgilendiklerim'e eklendi",
   "toast.released": "Yeni işlere geri kondu",
   "error.no_token.title": "GitHub'a giriş yapmamışsın.",
   "error.no_token.text": "Giriş yapmadan GitHub saatte yalnızca 60 isteğe izin veriyor; bu bir tarama için yetmez. Terminalde şunu çalıştır ya da GITHUB_TOKEN ayarla:",
@@ -69,5 +69,14 @@
   "kind.translation": "Çeviri",
   "project.more.other": "Bu projeden {count} iş daha",
   "signal.merged.other": "Son 3 ayda ekip dışından {shown} PR birleştirdi",
-  "signal.none": "Son 3 ayda ekip dışından PR birleştirmemiş"
+  "signal.none": "Son 3 ayda ekip dışından PR birleştirmemiş",
+  "action.draft": "Yorum taslağı",
+  "draft.title": "Bu işi almak için yorum yaz",
+  "draft.intro": "Bakımcılar genelde işi birine atamadan önce bir yorum bekler. İngilizce taslak hazır:",
+  "draft.hint": "Köşeli parantezli satırı kendi cümlenle değiştir: işi nasıl çözmeyi düşündüğünü yaz. Kalıp yorumlar spam gibi görünebilir.",
+  "draft.no_claim": "Bu projenin katkı rehberi işleri kimseye atamadıklarını ya da sormadan PR açabileceğini söylüyor. Yorum şart değil; istersen doğrudan PR açabilirsin.",
+  "draft.copy": "Kopyala ve GitHub'da aç",
+  "draft.copy_anyway": "Yine de kopyala",
+  "draft.copied": "Kopyalandı",
+  "draft.close": "Kapat"
 }

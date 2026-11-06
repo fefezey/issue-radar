@@ -264,3 +264,18 @@ def repo_info(repo: str) -> dict:
         "stars": info["stargazers_count"],
         "outside_merged": outside,
     }
+
+
+def contributing_guide(repo: str) -> str:
+    """The text of the project's contributing guide, or "" if it has none."""
+    with _client() as client:
+        profile = client.get(f"/repos/{repo}/community/profile")
+        if profile.status_code == 404:  # forks and some repositories have no profile
+            return ""
+        profile.raise_for_status()
+        guide = (profile.json().get("files") or {}).get("contributing")
+        if not guide or not guide.get("url"):
+            return ""
+        text = client.get(guide["url"], headers={"Accept": "application/vnd.github.raw"})
+        text.raise_for_status()
+        return text.text

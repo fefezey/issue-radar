@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
-
 import json
 import re
+from datetime import datetime, timedelta, timezone
 
+import httpx
 from flask import Flask, abort, g, redirect, render_template, request, url_for
 from markupsafe import Markup, escape
 
 from issue_radar import ai, db, settings
+from issue_radar.claiming import DRAFT, PLAN_PLACEHOLDER, policy_from_guide
+from issue_radar.github import contributing_guide
 from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
 from issue_radar.kinds import kind_of
 from issue_radar.languages import SUPPORTED_LANGUAGES, language_name
@@ -190,6 +192,34 @@ def interested(issue_id: int):
         db.set_status(conn, issue_id, "interested")
     # The page opens GitHub itself when it uses fetch(); without JavaScript we go there.
     return ("", 204) if _wants_json() else redirect(issue["url"])
+
+
+GUIDE_MAX_AGE = timedelta(days=7)  # read a project's contributing guide again after this
+
+
+@app.get("/issues/<int:issue_id>/draft")
+def draft(issue_id: int):
+    """A comment draft for claiming the issue, and whether the project expects one."""
+    with db.connect() as conn:
+        issue = db.get_issue(conn, issue_id)
+        if issue is None:
+            abort(404)
+        policy = db.get_claim_policy(conn, issue["repo"], GUIDE_MAX_AGE)
+    if policy is None:
+        try:
+            policy = policy_from_guide(contributing_guide(issue["repo"]))
+        except httpx.HTTPError:
+            policy = "ask"  # couldn't read the guide; the usual advice, not saved
+        else:
+            with db.connect() as conn:
+                db.save_claim_policy(conn, issue["repo"], policy)
+    return {
+        "title": issue["title"],
+        "url": issue["url"],
+        "draft": DRAFT,
+        "placeholder": PLAN_PLACEHOLDER,
+        "policy": policy,
+    }
 
 
 @app.post("/issues/<int:issue_id>/skip")

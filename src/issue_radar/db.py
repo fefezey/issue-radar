@@ -70,6 +70,8 @@ ADDED_REPO_COLUMNS = {
     "description": "TEXT",
     "outside_merged": "INTEGER",  # merged pull requests from outsiders, last 90 days
     "info_checked_at": "TEXT",
+    "claim_policy": "TEXT",  # "ask" or "no_claim", from the contributing guide
+    "guide_checked_at": "TEXT",
 }
 
 
@@ -260,6 +262,27 @@ def save_repo_info(conn: sqlite3.Connection, repo: str, info: dict) -> None:
             info_checked_at = excluded.info_checked_at
         """,
         (repo, info["stars"], now, info["description"], info["outside_merged"], now),
+    )
+
+
+def get_claim_policy(conn: sqlite3.Connection, repo: str, max_age: timedelta) -> str | None:
+    """What the project's contributing guide says about claiming, if we read it within `max_age`."""
+    since = (datetime.now(timezone.utc) - max_age).isoformat()
+    row = conn.execute(
+        "SELECT claim_policy FROM repo_stars WHERE repo = ? AND guide_checked_at >= ?", (repo, since)
+    ).fetchone()
+    return row["claim_policy"] if row else None
+
+
+def save_claim_policy(conn: sqlite3.Connection, repo: str, policy: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        INSERT INTO repo_stars (repo, stars, checked_at, claim_policy, guide_checked_at)
+        VALUES (?, 0, '', ?, ?)
+        ON CONFLICT(repo) DO UPDATE SET claim_policy = excluded.claim_policy, guide_checked_at = excluded.guide_checked_at
+        """,
+        (repo, policy, now),
     )
 
 

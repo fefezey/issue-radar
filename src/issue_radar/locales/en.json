@@ -54,7 +54,7 @@
   "new.subtitle": "Issues nobody has claimed, checked again on every scan.",
   "issue.taken": "Someone else is on it now",
   "issue.closed": "Closed",
-  "toast.interested": "Added to Interested. Comment on GitHub to claim it.",
+  "toast.interested": "Added to Interested",
   "toast.released": "Moved back to new issues",
   "error.no_token.title": "You're not signed in to GitHub.",
   "error.no_token.text": "Without signing in, GitHub allows only 60 requests an hour, which isn't enough for a scan. Run this in a terminal, or set GITHUB_TOKEN:",
@@ -78,5 +78,14 @@
   "project.more.other": "{count} more issues from this project",
   "signal.merged.one": "Merged 1 pull request from outside the team in the last 3 months",
   "signal.merged.other": "Merged {shown} pull requests from outside the team in the last 3 months",
-  "signal.none": "No pull requests from outside the team merged in the last 3 months"
+  "signal.none": "No pull requests from outside the team merged in the last 3 months",
+  "action.draft": "Comment draft",
+  "draft.title": "Comment to claim this issue",
+  "draft.intro": "Maintainers usually wait for a comment before assigning an issue. Here's a draft:",
+  "draft.hint": "Replace the line in [brackets] with your own sentence on how you'd fix it. Copy-paste comments can look like spam.",
+  "draft.no_claim": "This project's contributing guide says they don't assign issues, or that you can open a pull request without asking. A comment is optional.",
+  "draft.copy": "Copy and open on GitHub",
+  "draft.copy_anyway": "Copy anyway",
+  "draft.copied": "Copied",
+  "draft.close": "Close"
 }

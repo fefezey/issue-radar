@@ -22,13 +22,14 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - 📄 **Docs, tests and translations marked** — the gentlest first contributions, found from the issue's title and GitHub labels, with a filter to see only those.
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
+- ✍️ **Claim it** — *Interested* opens a ready-to-post comment ("I'd like to work on this… could you assign it to me?") with a line for your own plan, and a button that copies it and opens the issue. If the project's contributing guide says not to ask first, you're told so.
 - ⚙️ **Settings page** — pick the languages to search and the minimum stars.
 - 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
 - 🌗 Light and dark theme, following your system.
 
 ### Planned
 
-- [ ] A ready-to-post "I'd like to work on this" comment draft
+- [ ] Follow your claimed issues: assigned → pull request opened → merged
 - [ ] How quickly maintainers answer newcomers
 - [ ] More interface languages — [add yours](#add-a-language)
 - [ ] Notifications on Linux and Windows
@@ -117,6 +118,7 @@ src/issue_radar/
 ├── scanner.py       scans on a schedule and decides when to notify
 ├── ai.py            AI summaries through Ollama
 ├── kinds.py         spots docs, test and translation issues
+├── claiming.py      the comment draft, and reading contributing guides
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes

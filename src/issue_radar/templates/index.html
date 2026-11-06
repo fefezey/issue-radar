@@ -431,6 +431,31 @@
     }
     .empty strong { color: var(--text); font-size: 15px; }
 
+    dialog {
+      width: min(560px, calc(100% - 32px));
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+    }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+    .draft { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+    .draft h2 { display: block; font-size: 17px; }
+    .draft-issue { margin: 0; font-size: 13px; color: var(--muted); }
+    .draft textarea {
+      font: 13px/1.6 "Geist Mono", ui-monospace, monospace;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      resize: vertical;
+    }
+    .draft-hint.warn { color: var(--medium); font-weight: 500; }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -669,6 +694,7 @@
           {% else %}
             <div class="actions">
               <a class="btn primary" href="{{ issue.url }}" target="_blank" rel="noopener">{{ t('action.open') }}</a>
+              <button type="button" class="btn" data-draft="{{ issue.id }}">{{ t('action.draft') }}</button>
               <form method="post" action="{{ url_for('restore', issue_id=issue.id) }}" data-action="release">
                 <input type="hidden" name="tab" value="interested">
                 <button class="btn">{{ t('action.release') }}</button>
@@ -751,6 +777,22 @@
   </main>
 </div>
 
+{# The comment draft for claiming an issue; filled in by the script below. #}
+<dialog id="draft" aria-labelledby="draft-title">
+  <form method="dialog" class="draft">
+    <h2 id="draft-title">{{ t('draft.title') }}</h2>
+    <p class="draft-issue" lang="en"></p>
+    <p class="notice draft-no-claim" hidden>{{ t('draft.no_claim') }}</p>
+    <label class="hint" for="draft-text">{{ t('draft.intro') }}</label>
+    <textarea id="draft-text" rows="7" lang="en" spellcheck="true"></textarea>
+    <p class="hint draft-hint">{{ t('draft.hint') }}</p>
+    <div class="actions">
+      <button type="button" class="btn primary" data-copy>{{ t('draft.copy') }}</button>
+      <button class="btn quiet">{{ t('draft.close') }}</button>
+    </div>
+  </form>
+</dialog>
+
 {% if skipped %}
   <div class="toast" role="status">
     <span>{{ t('toast.skipped') }}</span>
@@ -777,6 +819,9 @@
     "undo": t("toast.undo"),
     "moreOne": t("project.more", 1),
     "moreOther": t("project.more", 2).replace("2", "{count}"),
+    "copy": t("draft.copy"),
+    "copyAnyway": t("draft.copy_anyway"),
+    "copied": t("draft.copied"),
   } | tojson }};
   const UNBLOCK_URL = {{ url_for('unblock') | tojson }};
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -879,7 +924,6 @@
     event.preventDefault();
 
     const card = form.closest("article");
-    if (action === "interested") window.open(card.dataset.url, "_blank", "noopener");
     form.querySelectorAll("button").forEach((button) => { button.disabled = true; });
 
     let response = null;
@@ -898,6 +942,7 @@
       bumpCount("new", -1);
       bumpCount("interested", 1);
       showToast(TEXT.interested, { url: card.dataset.restore });
+      openDraft(card.dataset.id);
     } else if (action === "hide") {
       bumpCount("new", -cards.length);
       bumpCount("hidden", 1);
@@ -912,6 +957,61 @@
 
     // The last card is gone: reload to show the empty state.
     setTimeout(() => { if (!document.querySelector("main article")) location.reload(); }, 500);
+  });
+
+  // --- Comment draft for claiming an issue. ---
+  const draftDialog = document.getElementById("draft");
+  const draftText = draftDialog.querySelector("textarea");
+  const draftHint = draftDialog.querySelector(".draft-hint");
+  const copyButton = draftDialog.querySelector("[data-copy]");
+
+  function selectPlaceholder() {
+    const start = draftText.value.indexOf(draftDialog.dataset.placeholder);
+    draftText.focus();
+    if (start >= 0) draftText.setSelectionRange(start, start + draftDialog.dataset.placeholder.length);
+  }
+
+  async function openDraft(issueId) {
+    let data;
+    try {
+      const response = await fetch(`/issues/${issueId}/draft`);
+      if (!response.ok) return;
+      data = await response.json();
+    } catch { return; }
+    draftDialog.querySelector(".draft-issue").textContent = data.title;
+    draftDialog.querySelector(".draft-no-claim").hidden = data.policy !== "no_claim";
+    draftDialog.dataset.url = data.url;
+    draftDialog.dataset.placeholder = data.placeholder;
+    draftDialog.dataset.warned = "";
+    draftText.value = data.draft;
+    draftHint.classList.remove("warn");
+    copyButton.textContent = TEXT.copy;
+    draftDialog.showModal();
+    selectPlaceholder();  // ready to type over
+  }
+
+  copyButton.addEventListener("click", async () => {
+    // Copy-paste comments look like spam: ask once for the user's own sentence.
+    if (draftText.value.includes(draftDialog.dataset.placeholder) && !draftDialog.dataset.warned) {
+      draftDialog.dataset.warned = "1";
+      draftHint.classList.add("warn");
+      copyButton.textContent = TEXT.copyAnyway;
+      selectPlaceholder();
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(draftText.value);
+    } catch {
+      draftText.select();
+      document.execCommand("copy");
+    }
+    copyButton.textContent = TEXT.copied;
+    window.open(draftDialog.dataset.url, "_blank", "noopener");
+  });
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-draft]");
+    if (button) openDraft(button.dataset.draft);
   });
 
   // --- Toast and notice that came with the page (when JavaScript was off for the action). ---
