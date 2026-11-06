@@ -129,4 +129,4 @@ Some words change with a number, like "1 star" but "3 stars". For those there ar
 
 ---
 
-<p align="center"><em>More contributing, less searching.</em></p>
+<p align="center"><em>Contribute more. Search less.</em></p>
