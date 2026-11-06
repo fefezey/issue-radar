@@ -21,6 +21,15 @@ MODEL = os.environ.get("OLLAMA_MODEL", "gemma3:4b")
 BATCH_SIZE = 10  # issues summarized per round, to keep the computer responsive
 IDLE_WAIT = 10 * 60  # seconds to wait when there is nothing to summarize
 
+# Kept small so the model fits on computers with 8 GB of memory.
+BODY_LIMIT = 2000  # characters of the issue's description sent to the model
+CONTEXT_SIZE = 2048  # tokens the model keeps in memory
+KEEP_LOADED = "30s"  # free the model's memory soon after the last summary
+
+# Issues that couldn't be summarized since the program started; not retried
+# until the next start, so one stubborn issue can't keep the computer busy.
+_failed: set[int] = set()
+
 DIFFICULTIES = ["easy", "medium", "hard"]
 EFFORTS = ["under_1h", "1_3h", "3_8h", "over_1d"]
 
@@ -77,10 +86,11 @@ def summarize(title: str, body: str, repo: str, lang: str) -> dict:
             "model": MODEL,
             "stream": False,
             "format": _ANSWER_FORMAT,
-            "options": {"temperature": 0.2},
+            "keep_alive": KEEP_LOADED,
+            "options": {"temperature": 0.2, "num_ctx": CONTEXT_SIZE},
             "messages": [
                 {"role": "system", "content": _INSTRUCTIONS.format(language=language)},
-                {"role": "user", "content": f"Repository: {repo}\nTitle: {title}\n\n{body}"},
+                {"role": "user", "content": f"Repository: {repo}\nTitle: {title}\n\n{body[:BODY_LIMIT]}"},
             ],
         },
         # The first answer can be slow while the model loads into memory.
@@ -103,7 +113,8 @@ def _summarize_batch() -> int:
     """Summarize up to BATCH_SIZE issues. Returns how many were done."""
     with db.connect() as conn:
         lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
-        issues = db.issues_to_summarize(conn, lang, BATCH_SIZE)
+        issues = db.issues_to_summarize(conn, lang, BATCH_SIZE + len(_failed))
+    issues = [issue for issue in issues if issue["id"] not in _failed][:BATCH_SIZE]
 
     done = 0
     for issue in issues:
@@ -120,6 +131,7 @@ def _summarize_batch() -> int:
             result = summarize(issue["title"], body, issue["repo"], lang)
         except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as error:
             print(f"Özet hazırlanamadı ({issue['url']}): {error}", flush=True)
+            _failed.add(issue["id"])
             continue
 
         # Talking to the model takes a while; only open the database to save.
