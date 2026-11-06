@@ -6,6 +6,10 @@
 
 <p align="center"><strong>Find your next open-source contribution before someone else does.</strong></p>
 
+<p align="center">
+  <a href="https://github.com/fefezey/issue-radar/actions/workflows/tests.yml"><img src="https://github.com/fefezey/issue-radar/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+</p>
+
 Beginner-friendly GitHub issues get picked up fast — often within hours. Issue Radar watches GitHub for you, finds new `good first issue`s that nobody has claimed yet, and lets you know right away.
 
 It runs on your own computer: no account, no server, your choices stay on your disk.
@@ -143,6 +147,14 @@ Contributions are welcome — this is a tool for first-time contributors, after 
 - **Anything from the [Planned](#planned) list.**
 
 Open an issue first if you plan a bigger change.
+
+### Run the tests
+
+```bash
+uv run pytest
+```
+
+The tests need no network, no GitHub token and no Ollama: GitHub's and the model's answers are made up in the tests, and every test gets its own empty database. They run on every push and pull request.
 
 ### Add a language
 
