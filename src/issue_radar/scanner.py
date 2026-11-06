@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from issue_radar import ai, db, settings
 import httpx
 
-from issue_radar.github import check_issues, contributed_repos, find_issues, has_token
+from issue_radar.github import check_issues, contributed_repos, find_issues, has_token, repo_info
 from issue_radar.i18n import DEFAULT_LANGUAGE
 from issue_radar.notify import notify_new_issues
 
@@ -18,6 +18,8 @@ MIN_SCAN_GAP = 60  # even when woken early (settings saved), wait this long afte
 CONTRIBUTIONS_MAX_AGE = timedelta(days=1)  # look up your own pull requests again after this
 
 RECHECK_BATCH = 20  # saved issues checked again on GitHub after each scan, in one request
+REPO_INFO_BATCH = 8  # projects whose description and newcomer signal are looked up per scan
+REPO_INFO_MAX_AGE = timedelta(days=1)
 
 # Read by the web page to show what the scanner is doing.
 status = {
@@ -54,6 +56,21 @@ def recheck() -> None:
         return
     with db.connect() as conn:
         db.set_availability(conn, results, labels)
+
+
+def refresh_repo_info() -> None:
+    """Look up what projects on the list are and whether they merge outsiders'
+    pull requests. A few per scan, each at most once a day."""
+    with db.connect() as conn:
+        repos = db.repos_needing_info(conn, REPO_INFO_MAX_AGE, REPO_INFO_BATCH)
+    for repo in repos:
+        try:
+            info = repo_info(repo)
+        except httpx.HTTPError as error:
+            print(f"Proje bilgisi alınamadı ({repo}): {error}", flush=True)
+            continue
+        with db.connect() as conn:
+            db.save_repo_info(conn, repo, info)
 
 # Set this to start the next scan right away instead of waiting.
 wake = threading.Event()
@@ -136,6 +153,7 @@ def scan_forever() -> None:
             if not error:
                 time.sleep(SEARCH_PAUSE)
                 recheck()
+                refresh_repo_info()
         except Exception as e:  # keep scanning even if one scan fails
             error = e
         finally:

@@ -64,11 +64,21 @@ _STILL_FREE = "COALESCE(availability, 'open') = 'open'"
 BODY_MAX_LENGTH = 4000
 
 
+# Columns added to `repo_stars` later: what the project is, and whether it
+# merges pull requests from outside its team.
+ADDED_REPO_COLUMNS = {
+    "description": "TEXT",
+    "outside_merged": "INTEGER",  # merged pull requests from outsiders, last 90 days
+    "info_checked_at": "TEXT",
+}
+
+
 def _add_missing_columns(conn: sqlite3.Connection) -> None:
-    existing = {row["name"] for row in conn.execute("PRAGMA table_info(issues)")}
-    for name, kind in ADDED_ISSUE_COLUMNS.items():
-        if name not in existing:
-            conn.execute(f"ALTER TABLE issues ADD COLUMN {name} {kind}")
+    for table, columns in (("issues", ADDED_ISSUE_COLUMNS), ("repo_stars", ADDED_REPO_COLUMNS)):
+        existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for name, kind in columns.items():
+            if name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {kind}")
 
 
 @contextmanager
@@ -219,6 +229,44 @@ def load_repo_stars(conn: sqlite3.Connection, max_age: timedelta) -> dict[str, i
     since = (datetime.now(timezone.utc) - max_age).isoformat()
     rows = conn.execute("SELECT repo, stars FROM repo_stars WHERE checked_at >= ?", (since,))
     return {row["repo"]: row["stars"] for row in rows}
+
+
+def repos_needing_info(conn: sqlite3.Connection, max_age: timedelta, limit: int) -> list[str]:
+    """Projects with issues on the list whose info is missing or older than `max_age`."""
+    since = (datetime.now(timezone.utc) - max_age).isoformat()
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT i.repo FROM issues i
+        LEFT JOIN repo_stars r ON r.repo = i.repo
+        WHERE i.status IN ('new', 'interested') AND {_STILL_FREE}
+          AND i.repo NOT IN (SELECT repo FROM blocked_repos)
+          AND (r.info_checked_at IS NULL OR r.info_checked_at < ?)
+        LIMIT ?
+        """,
+        (since, limit),
+    )
+    return [row["repo"] for row in rows]
+
+
+def save_repo_info(conn: sqlite3.Connection, repo: str, info: dict) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        INSERT INTO repo_stars (repo, stars, checked_at, description, outside_merged, info_checked_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(repo) DO UPDATE SET
+            stars = excluded.stars, checked_at = excluded.checked_at,
+            description = excluded.description, outside_merged = excluded.outside_merged,
+            info_checked_at = excluded.info_checked_at
+        """,
+        (repo, info["stars"], now, info["description"], info["outside_merged"], now),
+    )
+
+
+def load_repo_info(conn: sqlite3.Connection) -> dict[str, sqlite3.Row]:
+    """Project info we have, by repository name."""
+    rows = conn.execute("SELECT * FROM repo_stars WHERE info_checked_at IS NOT NULL")
+    return {row["repo"]: row for row in rows}
 
 
 def save_repo_stars(conn: sqlite3.Connection, stars: dict[str, int]) -> None:

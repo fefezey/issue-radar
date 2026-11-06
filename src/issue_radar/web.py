@@ -86,6 +86,15 @@ def scan_text() -> str:
     return t("scan.just_now") if minutes == 0 else t("scan.minutes", minutes)
 
 
+def group_by_project(issues: list) -> list[tuple[str, list]]:
+    """[(repo, its issues), ...], keeping the order in which projects first appear,
+    so one busy project doesn't fill the whole list."""
+    groups: dict[str, list] = {}
+    for issue in issues:
+        groups.setdefault(issue["repo"], []).append(issue)
+    return list(groups.items())
+
+
 @app.get("/")
 def index():
     tab = request.args.get("tab", "new")
@@ -111,6 +120,7 @@ def index():
         easy_only = request.args.get("easy") == "1"
         if easy_only:
             new_issues = [issue for issue in new_issues if kinds[issue["id"]]]
+        repos = db.load_repo_info(conn)
         undo_issue = request.args.get("undo_issue", type=int)
         skipped = db.get_issue(conn, undo_issue) if undo_issue else None
 
@@ -119,6 +129,8 @@ def index():
         tab=tab,
         issues=new_issues if tab == "new" else interested_issues,
         counts={"new": new_count, "interested": len(interested_issues), "hidden": len(hidden_repos)},
+        groups=group_by_project(new_issues),
+        repos=repos,
         kinds=kinds,
         easy_count=easy_count,
         easy_only=easy_only,

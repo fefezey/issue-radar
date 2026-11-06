@@ -66,5 +66,8 @@
   "empty.easy.text": "Hepsini görmek için Tümü'ne geç.",
   "kind.docs": "Doküman",
   "kind.tests": "Test",
-  "kind.translation": "Çeviri"
+  "kind.translation": "Çeviri",
+  "project.more.other": "Bu projeden {count} iş daha",
+  "signal.merged.other": "Son 3 ayda ekip dışından {shown} PR birleştirdi",
+  "signal.none": "Son 3 ayda ekip dışından PR birleştirmemiş"
 }

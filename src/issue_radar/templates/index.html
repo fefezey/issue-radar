@@ -267,6 +267,35 @@
     .badge.known { color: var(--muted); }
     .badge.known::before { background: var(--muted); border-radius: 2px; }
     .badge.plain::before { content: none; }
+    /* A project and its issues. */
+    .project { display: flex; flex-direction: column; gap: 12px; }
+    .project + .project { margin-top: 12px; }
+    .project-head { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
+    .project-head .repo { color: var(--text); text-decoration: none; }
+    .project-head .repo:hover { text-decoration: underline; }
+    .about {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .signal { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ok); }
+    .signal::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok-dot); flex: none; }
+    .signal.none { color: var(--muted); }
+    .signal.none::before { background: var(--warn-dot); }
+    .more > summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 4px;
+      width: fit-content;
+      border-radius: 6px;
+    }
+    .more > summary:hover { color: var(--text); }
+    .more-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+
     /* Docs, tests, translations: the gentlest first contributions. */
     .badge.kind { color: var(--ok); background: var(--ok-bg); }
     .badge.kind::before { border-radius: 50%; background: var(--ok-dot); }
@@ -590,24 +619,23 @@
         {% endif %}
       {% endif %}
 
-      {% for issue in issues %}
+      {% macro card(issue, in_group=false) %}
         <article data-id="{{ issue.id }}" data-repo="{{ issue.repo }}" data-url="{{ issue.url }}"
                  data-restore="{{ url_for('restore', issue_id=issue.id) }}">
-          {# One line: kind of work, project, stars, language, age, then any notes. #}
+          {# One line: kind of work, project (unless the group shows it), age, notes. #}
           <div class="meta">
             {% if kinds[issue.id] %}
               <span class="badge kind">{{ t('kind.' ~ kinds[issue.id]) }}</span>
             {% endif %}
-            <span class="repo mono">{{ issue.repo }}</span>
-            <span class="sep" aria-hidden="true">·</span>
-            <span>{{ issue.stars | stars }}</span>
-            <span class="sep" aria-hidden="true">·</span>
-            <span>{{ issue.language | language }}</span>
-            <span class="sep" aria-hidden="true">·</span>
-            <span>{{ issue.created_at | ago }}</span>
-            {% if tab == 'new' and issue.repo in contributed %}
-              <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
+            {% if not in_group %}
+              <span class="repo mono">{{ issue.repo }}</span>
+              <span class="sep" aria-hidden="true">·</span>
+              <span>{{ issue.stars | stars }}</span>
+              <span class="sep" aria-hidden="true">·</span>
+              <span>{{ issue.language | language }}</span>
+              <span class="sep" aria-hidden="true">·</span>
             {% endif %}
+            <span>{{ issue.created_at | ago }}</span>
             {% if tab == 'interested' and issue.availability in ('taken', 'closed') %}
               <span class="badge gone">{{ t('issue.' ~ issue.availability) }}</span>
             {% endif %}
@@ -648,7 +676,9 @@
             </div>
           {% endif %}
         </article>
-      {% else %}
+      {% endmacro %}
+
+      {% macro empty_state() %}
         <div class="empty">
           <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true">
             <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" stroke-width="3"/>
@@ -671,7 +701,52 @@
             <span>{{ t('empty.interested.text') }}</span>
           {% endif %}
         </div>
-      {% endfor %}
+      {% endmacro %}
+
+      {% if tab == 'new' %}
+        {# New issues, grouped by project: what the project is and whether it takes
+           outsiders' pull requests is shown once, above its issues. #}
+        {% for repo, items in groups %}
+          {% set info = repos.get(repo) %}
+          <section class="project" data-repo="{{ repo }}">
+            <div class="project-head">
+              <div class="meta">
+                <a class="repo mono" href="https://github.com/{{ repo }}" target="_blank" rel="noopener">{{ repo }}</a>
+                <span class="sep" aria-hidden="true">·</span>
+                <span>{{ items[0].stars | stars }}</span>
+                <span class="sep" aria-hidden="true">·</span>
+                <span>{{ items[0].language | language }}</span>
+                {% if repo in contributed %}
+                  <span class="badge known">{{ t('issue.contributed_before', contributed[repo]) }}</span>
+                {% endif %}
+              </div>
+              {% if info and info.description %}
+                <p class="about" title="{{ info.description }}">{{ info.description }}</p>
+              {% endif %}
+              {% if info and info.outside_merged is not none %}
+                {% if info.outside_merged %}
+                  <p class="signal">{{ t('signal.merged', info.outside_merged, shown='100+' if info.outside_merged >= 100 else info.outside_merged) }}</p>
+                {% else %}
+                  <p class="signal none">{{ t('signal.none') }}</p>
+                {% endif %}
+              {% endif %}
+            </div>
+            {{ card(items[0], true) }}
+            {% if items | length > 1 %}
+              <details class="more">
+                <summary>{{ t('project.more', items | length - 1) }}</summary>
+                <div class="more-list">
+                  {% for issue in items[1:] %}{{ card(issue, true) }}{% endfor %}
+                </div>
+              </details>
+            {% endif %}
+          </section>
+        {% else %}
+          {{ empty_state() }}
+        {% endfor %}
+      {% else %}
+        {% for issue in issues %}{{ card(issue) }}{% else %}{{ empty_state() }}{% endfor %}
+      {% endif %}
     {% endif %}
   </main>
 </div>
@@ -700,6 +775,8 @@
     "hidden": t("toast.hidden", repo="__REPO__"),
     "released": t("toast.released"),
     "undo": t("toast.undo"),
+    "moreOne": t("project.more", 1),
+    "moreOther": t("project.more", 2).replace("2", "{count}"),
   } | tojson }};
   const UNBLOCK_URL = {{ url_for('unblock') | tojson }};
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -762,8 +839,27 @@
     count.hidden = value === 0;
   }
 
+  // After cards leave a project group: bring up the next folded issue,
+  // update "N more" and drop groups that have no issues left.
+  function tidyGroups() {
+    for (const group of document.querySelectorAll("section.project")) {
+      const more = group.querySelector("details.more");
+      if (more && !group.querySelector(":scope > article")) {
+        const first = more.querySelector("article");
+        if (first) more.before(first);
+      }
+      if (more) {
+        const left = more.querySelectorAll("article").length;
+        if (left === 0) more.remove();
+        else more.querySelector("summary").textContent = (left === 1 ? TEXT.moreOne : TEXT.moreOther).replace("{count}", left);
+      }
+      if (!group.querySelector("article")) group.remove();
+    }
+  }
+
   function removeCards(cards) {
-    const next = cards.at(-1).nextElementSibling;
+    const all = [...document.querySelectorAll("main article")];
+    const next = all.slice(all.indexOf(cards.at(-1)) + 1).find((card) => !cards.includes(card));
     for (const card of cards) {
       if (calm) { card.remove(); continue; }
       card.style.height = card.offsetHeight + "px";
@@ -771,8 +867,9 @@
       setTimeout(() => card.classList.add("collapsing"), 180);
       setTimeout(() => card.remove(), 450);
     }
+    setTimeout(tidyGroups, calm ? 0 : 460);
     // Keep keyboard focus in the list.
-    if (next?.matches("article")) next.querySelector("h2 a").focus({ preventScroll: true });
+    next?.querySelector("h2 a").focus({ preventScroll: true });
   }
 
   document.addEventListener("submit", async (event) => {

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 import os
 import shutil
 import subprocess
@@ -27,6 +28,15 @@ def _client() -> httpx.Client:
         headers["Authorization"] = f"Bearer {token}"
     return httpx.Client(base_url=API_URL, headers=headers, timeout=10)
 
+
+# Labels projects use for issues meant for newcomers.
+BEGINNER_LABELS = (
+    "good first issue",
+    "good-first-issue",
+    "first-timers-only",
+    "beginner",
+    "beginner-friendly",
+)
 
 # Phrases people use in comments when they take an issue.
 CLAIM_PHRASES = (
@@ -83,10 +93,8 @@ def find_issues(
         stars = {}
     # no:assignee  -> nobody is assigned to it
     # -linked:pr   -> no pull request has been opened for it
-    query = (
-        f'label:"good first issue" state:open is:issue language:{language} '
-        "no:assignee -linked:pr"
-    )
+    labels = ",".join(f'"{label}"' for label in BEGINNER_LABELS)  # comma = any of them
+    query = f"label:{labels} state:open is:issue language:{language} no:assignee -linked:pr"
 
     with _client() as client:
         response = client.get(
@@ -214,3 +222,45 @@ def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[s
         else:
             results[issue_id] = "open"
     return results, labels
+
+
+# How far back to look at a project's merged pull requests.
+NEWCOMER_WINDOW = timedelta(days=90)
+
+# Author roles GitHub gives people outside the project's own team.
+# (There are "first-timer" roles too, but GitHub turns them into
+# "CONTRIBUTOR" once the pull request is merged, so we can't count them.)
+_OUTSIDE_ROLES = {"CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"}
+
+
+def repo_info(repo: str) -> dict:
+    """What a project is, and whether it takes pull requests from outsiders.
+
+    Counts pull requests merged in the last NEWCOMER_WINDOW that came from
+    outside the project's team. Bots don't count. Two requests to GitHub's regular API (not the search).
+    """
+    since = datetime.now(timezone.utc) - NEWCOMER_WINDOW
+    with _client() as client:
+        about = client.get(f"/repos/{repo}")
+        about.raise_for_status()
+        pulls = client.get(
+            f"/repos/{repo}/pulls",
+            params={"state": "closed", "sort": "updated", "direction": "desc", "per_page": 100},
+        )
+        pulls.raise_for_status()
+
+    outside = 0
+    for pr in pulls.json():
+        merged = pr.get("merged_at")
+        user = pr.get("user") or {}
+        if not merged or datetime.fromisoformat(merged) < since or user.get("type") == "Bot":
+            continue
+        if pr.get("author_association") in _OUTSIDE_ROLES:
+            outside += 1
+
+    info = about.json()
+    return {
+        "description": (info.get("description") or "").strip(),
+        "stars": info["stargazers_count"],
+        "outside_merged": outside,
+    }

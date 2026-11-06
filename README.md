@@ -12,7 +12,9 @@ It runs on your own computer: no account, no server, your choices stay on your d
 
 ## Features
 
-- 🔍 **Finds new `good first issue`s** in the languages you choose, newest first.
+- 🔍 **Finds new beginner issues** in the languages you choose, newest first — labeled `good first issue`, `good-first-issue`, `first-timers-only`, `beginner` or `beginner-friendly`.
+- 🧭 **Is this project friendly to newcomers?** — each project shows what it is in one line, and how many pull requests from outside its team it merged in the last three months. A project that merges none is marked.
+- 🗂️ **Grouped by project** — one busy project can't fill the whole list; its other issues fold under "N more issues from this project".
 - ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
 - 🌱 **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
 - ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this". Saved issues are checked again on every scan, so ones that were closed or taken later drop out too.
@@ -27,19 +29,20 @@ It runs on your own computer: no account, no server, your choices stay on your d
 ### Planned
 
 - [ ] A ready-to-post "I'd like to work on this" comment draft
-- [ ] "Is this project friendly to newcomers?" — how quickly maintainers answer and merge first-timers' pull requests
+- [ ] How quickly maintainers answer newcomers
 - [ ] More interface languages — [add yours](#add-a-language)
 - [ ] Notifications on Linux and Windows
 - [ ] Telegram and Discord notifications
 
 ## How it works
 
-1. **Scan** — every 10 minutes, search GitHub for new open issues labeled `good first issue`.
+1. **Scan** — every 10 minutes, search GitHub for new open issues with a beginner label.
 2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with too few stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
 3. **Re-check** — look again at up to 20 saved issues in a single request, and drop the ones that have been closed or taken since.
-4. **Summarize** — if Ollama is running, write a short summary for each new issue, one at a time in the background. Issues with a very short description get none: the title already says it.
-5. **Notify** — save new issues locally and show a Mac notification.
-6. **Decide** — open the web page and pick what you want to work on.
+4. **Learn about projects** — for a few projects per scan, at most once a day each: what the project is, and how many outsiders' pull requests it merged lately (bots don't count).
+5. **Summarize** — if Ollama is running, write a short summary for each new issue, one at a time in the background. Issues with a very short description get none: the title already says it.
+6. **Notify** — save new issues locally and show a Mac notification.
+7. **Decide** — open the web page and pick what you want to work on.
 
 ## Getting started
 

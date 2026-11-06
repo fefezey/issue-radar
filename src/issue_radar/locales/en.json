@@ -73,5 +73,10 @@
   "empty.easy.text": "Switch to All to see everything.",
   "kind.docs": "Docs",
   "kind.tests": "Tests",
-  "kind.translation": "Translation"
+  "kind.translation": "Translation",
+  "project.more.one": "1 more issue from this project",
+  "project.more.other": "{count} more issues from this project",
+  "signal.merged.one": "Merged 1 pull request from outside the team in the last 3 months",
+  "signal.merged.other": "Merged {shown} pull requests from outside the team in the last 3 months",
+  "signal.none": "No pull requests from outside the team merged in the last 3 months"
 }
