@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/fefezey/issue-radar/actions/workflows/tests.yml"><img src="https://github.com/fefezey/issue-radar/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  · <a href="README.tr.md">Türkçe</a>
 </p>
 
 Beginner-friendly GitHub issues get picked up fast — often within hours. Issue Radar watches GitHub for you, finds new `good first issue`s that nobody has claimed yet, and lets you know right away.
