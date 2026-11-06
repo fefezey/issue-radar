@@ -30,8 +30,11 @@ KEEP_LOADED = "30s"  # free the model's memory soon after the last summary
 # until the next start, so one stubborn issue can't keep the computer busy.
 _failed: set[int] = set()
 
-DIFFICULTIES = ["easy", "medium", "hard"]
-EFFORTS = ["under_1h", "1_3h", "3_8h", "over_1d"]
+# Bump this when the instructions change, so older summaries are written again.
+SUMMARY_VERSION = 4
+
+# With a description shorter than this, the title already says it all.
+SHORT_BODY = 200
 
 # Language names the model understands, by interface language code.
 _LANGUAGE_NAMES = {"tr": "Turkish", "en": "English"}
@@ -46,24 +49,50 @@ _ANSWER_FORMAT = {
     "type": "object",
     "properties": {
         "summary": {"type": "string"},
-        "difficulty": {"type": "string", "enum": DIFFICULTIES},
-        "effort": {"type": "string", "enum": EFFORTS},
     },
-    "required": ["summary", "difficulty", "effort"],
+    "required": ["summary"],
 }
 
+# Only a summary: we tried asking the small model how hard an issue is, and its
+# answers swung with the wording (all "medium", then all "easy"). The kind of
+# work (docs, tests, translation) comes from plain rules in kinds.py instead.
 _INSTRUCTIONS = """\
 You help people who are new to open source pick a GitHub issue to work on.
-Read the issue and answer in JSON with these fields:
+Read the issue and answer in JSON with one field:
 
-- summary: two short sentences in {language}, in plain words, saying what needs
-  to be done. Keep code names, file names and technical terms as they are.
-  Only use what the issue says; don't make up details.
-- difficulty: for someone making one of their first contributions.
-  "easy": a small, clear change. "medium": needs some understanding of the code.
-  "hard": needs deep knowledge of the project or the topic.
-- effort: rough time for a beginner: "under_1h", "1_3h", "3_8h" or "over_1d".
+- summary: at most two short sentences in {language}, in plain words, saying
+  what needs to change and where. {address}
+  Don't repeat the title; say what the title doesn't. Keep code names, file
+  names, commands and product terms (like "player", "docs", "CLI") as they are,
+  in `backticks` if they are code. Only use what the issue says; never guess.
 """
+
+# How to talk to the reader, per language.
+_ADDRESS = {
+    "tr": (
+        'Use the informal "sen" verb forms, like "eklemelisin" or "bakabilirsin" '
+        '(never "siz" or "biz" forms), but don\'t write the word "Sen" itself.'
+    ),
+    "en": 'Speak to the reader directly ("you").',
+}
+
+# A Turkish summary should have Turkish letters or common Turkish words;
+# small models sometimes answer in English anyway.
+_TURKISH_HINTS = ("ç", "ğ", "ı", "ö", "ş", "ü", " ve ", " bir ", " için ", " bu ")
+
+
+def _in_language(text: str, lang: str) -> bool:
+    if lang != "tr":
+        return True
+    text = f" {text.lower()} "
+    return any(hint in text for hint in _TURKISH_HINTS)
+
+
+def _repeats_title(summary: str, title: str) -> bool:
+    """True if nearly every word of the summary is already in the title."""
+    words = lambda text: {w.strip(".,:;!?`'\"()[]").lower() for w in text.split()} - {""}
+    summary_words = words(summary)
+    return len(summary_words) > 0 and len(summary_words & words(title)) / len(summary_words) > 0.7
 
 
 def check() -> str:
@@ -81,9 +110,9 @@ def is_available() -> bool:
     return check() == "on"
 
 
-def summarize(title: str, body: str, repo: str, lang: str) -> dict:
-    """Ask the model for a summary, difficulty and effort estimate."""
+def _ask(title: str, body: str, repo: str, lang: str) -> dict:
     language = _LANGUAGE_NAMES.get(lang, "English")
+    instructions = _INSTRUCTIONS.format(language=language, address=_ADDRESS.get(lang, _ADDRESS["en"]))
     response = httpx.post(
         f"{OLLAMA_URL}/api/chat",
         json={
@@ -93,7 +122,7 @@ def summarize(title: str, body: str, repo: str, lang: str) -> dict:
             "keep_alive": KEEP_LOADED,
             "options": {"temperature": 0.2, "num_ctx": CONTEXT_SIZE},
             "messages": [
-                {"role": "system", "content": _INSTRUCTIONS.format(language=language)},
+                {"role": "system", "content": instructions},
                 {"role": "user", "content": f"Repository: {repo}\nTitle: {title}\n\n{body[:BODY_LIMIT]}"},
             ],
         },
@@ -101,23 +130,32 @@ def summarize(title: str, body: str, repo: str, lang: str) -> dict:
         timeout=300,
     )
     response.raise_for_status()
-    answer = json.loads(response.json()["message"]["content"])
+    return json.loads(response.json()["message"]["content"])
 
-    summary = str(answer.get("summary", "")).strip()
-    if not summary:
-        raise ValueError("The model returned an empty summary.")
-    return {
-        "summary": summary,
-        "difficulty": answer.get("difficulty") if answer.get("difficulty") in DIFFICULTIES else "medium",
-        "effort": answer.get("effort") if answer.get("effort") in EFFORTS else "1_3h",
-    }
+
+def summarize(title: str, body: str, repo: str, lang: str) -> str:
+    """Ask the model for a short summary.
+
+    Returns "" when a summary wouldn't help: the description is too short to
+    add anything to the title (then the model isn't asked at all), the model
+    answered in the wrong language twice, or the summary only repeats the title.
+    """
+    if len(body.strip()) < SHORT_BODY:
+        return ""
+    summary = str(_ask(title, body, repo, lang).get("summary", "")).strip()
+    if summary and not _in_language(summary, lang):
+        summary = str(_ask(title, body, repo, lang).get("summary", "")).strip()  # one more try
+
+    if not _in_language(summary, lang) or _repeats_title(summary, title):
+        return ""
+    return summary
 
 
 def _summarize_batch() -> int:
     """Summarize up to BATCH_SIZE issues. Returns how many were done."""
     with db.connect() as conn:
         lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
-        issues = db.issues_to_summarize(conn, lang, BATCH_SIZE + len(_failed))
+        issues = db.issues_to_summarize(conn, lang, SUMMARY_VERSION, BATCH_SIZE + len(_failed))
     issues = [issue for issue in issues if issue["id"] not in _failed][:BATCH_SIZE]
 
     done = 0
@@ -132,7 +170,7 @@ def _summarize_batch() -> int:
                 db.set_body(conn, issue["id"], body)
 
         try:
-            result = summarize(issue["title"], body, issue["repo"], lang)
+            summary = summarize(issue["title"], body, issue["repo"], lang)
         except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as error:
             print(f"Özet hazırlanamadı ({issue['url']}): {error}", flush=True)
             _failed.add(issue["id"])
@@ -140,7 +178,7 @@ def _summarize_batch() -> int:
 
         # Talking to the model takes a while; only open the database to save.
         with db.connect() as conn:
-            db.save_summary(conn, issue["id"], result["summary"], result["difficulty"], result["effort"], lang)
+            db.save_summary(conn, issue["id"], summary, lang, SUMMARY_VERSION)
         done += 1
     return done
 

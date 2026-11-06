@@ -48,12 +48,12 @@ def recheck() -> None:
     if not issues:
         return
     try:
-        results = check_issues({issue["id"]: issue["url"] for issue in issues})
+        results, labels = check_issues({issue["id"]: issue["url"] for issue in issues})
     except (httpx.HTTPError, ValueError) as error:
         print(f"İşler yeniden kontrol edilemedi: {error}", flush=True)
         return
     with db.connect() as conn:
-        db.set_availability(conn, results)
+        db.set_availability(conn, results, labels)
 
 # Set this to start the next scan right away instead of waiting.
 wake = threading.Event()

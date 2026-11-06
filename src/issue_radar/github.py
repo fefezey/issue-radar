@@ -156,6 +156,7 @@ def issue_body(url: str) -> str:
 _CHECK_FIELDS = """
 fragment Check on Issue {
   state
+  labels(first: 20) { nodes { name } }
   assignees(first: 10) { nodes { login } }
   closedByPullRequestsReferences(first: 10, includeClosedPrs: false) { nodes { author { login } } }
   comments(last: 50) { nodes { author { login } body } }
@@ -163,12 +164,12 @@ fragment Check on Issue {
 """
 
 
-def check_issues(urls: dict[int, str]) -> dict[int, str]:
+def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[str]]]:
     """Look again at issues we saved earlier, all in one request.
 
-    Returns "open", "taken" or "closed" for each issue id. Your own
-    assignment, pull request or comment doesn't count as "taken".
-    Issues GitHub couldn't answer about are left out.
+    Returns, by issue id, "open", "taken" or "closed", and the issue's
+    current labels. Your own assignment, pull request or comment doesn't
+    count as "taken". Issues GitHub couldn't answer about are left out.
     """
     aliases: dict[str, int] = {}
     parts = []
@@ -191,11 +192,14 @@ def check_issues(urls: dict[int, str]) -> dict[int, str]:
         return (actor or {}).get("login") not in (me, None)
 
     results: dict[int, str] = {}
+    labels: dict[int, list[str]] = {}
     for alias, issue_id in aliases.items():
         repo = data.get(alias)
         if repo is None:  # GitHub didn't answer for this one; try again next time
             continue
         issue = repo.get("issue")
+        if issue is not None:
+            labels[issue_id] = [label["name"] for label in issue["labels"]["nodes"]]
         if issue is None or issue["state"] == "CLOSED":  # closed, deleted or moved
             results[issue_id] = "closed"
         elif (
@@ -209,4 +213,4 @@ def check_issues(urls: dict[int, str]) -> dict[int, str]:
             results[issue_id] = "taken"
         else:
             results[issue_id] = "open"
-    return results
+    return results, labels

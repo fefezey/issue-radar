@@ -16,7 +16,8 @@ It runs on your own computer: no account, no server, your choices stay on your d
 - ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
 - 🌱 **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
 - ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this". Saved issues are checked again on every scan, so ones that were closed or taken later drop out too.
-- 🤖 **AI summaries, free and private** — a small model on your own computer (via [Ollama](https://ollama.com)) explains each issue in two sentences in your language and guesses how hard it is. Optional; without it you just don't see summaries.
+- 🤖 **AI summaries, free and private** — a small model on your own computer (via [Ollama](https://ollama.com)) explains each issue in two sentences in your language. Optional; without it you just don't see summaries.
+- 📄 **Docs, tests and translations marked** — the gentlest first contributions, found from the issue's title and GitHub labels, with a filter to see only those.
 - 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
 - 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
 - ⚙️ **Settings page** — pick the languages to search and the minimum stars.
@@ -36,7 +37,7 @@ It runs on your own computer: no account, no server, your choices stay on your d
 1. **Scan** — every 10 minutes, search GitHub for new open issues labeled `good first issue`.
 2. **Filter** — drop issues that are assigned, have a linked PR, were claimed in the comments, or come from repositories with too few stars. Star counts are remembered for a day, so GitHub isn't asked again on every scan.
 3. **Re-check** — look again at up to 20 saved issues in a single request, and drop the ones that have been closed or taken since.
-4. **Summarize** — if Ollama is running, write a short summary and difficulty for each new issue, one at a time in the background.
+4. **Summarize** — if Ollama is running, write a short summary for each new issue, one at a time in the background. Issues with a very short description get none: the title already says it.
 5. **Notify** — save new issues locally and show a Mac notification.
 6. **Decide** — open the web page and pick what you want to work on.
 
@@ -112,6 +113,7 @@ src/issue_radar/
 ├── github.py        talks to GitHub: search, star counts, claimed issues, your pull requests
 ├── scanner.py       scans on a schedule and decides when to notify
 ├── ai.py            AI summaries through Ollama
+├── kinds.py         spots docs, test and translation issues
 ├── notify.py        Mac notifications
 ├── db.py            the local SQLite database
 ├── web.py           the web page's routes
@@ -129,6 +131,7 @@ Contributions are welcome — this is a tool for first-time contributors, after 
 
 - **Add a language** — see below. No coding needed.
 - **Improve claim detection.** `CLAIM_PHRASES` in `github.py` lists the phrases people use to claim an issue. Add the ones you see in the wild.
+- **Spot more kinds of easy work.** `kinds.py` finds docs, test and translation issues from titles and labels. Missed one, or found a wrong match? Adjust the rules.
 - **Linux or Windows notifications.** `notify.py` only supports macOS.
 - **Anything from the [Planned](#planned) list.**
 

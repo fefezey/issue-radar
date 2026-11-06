@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -49,10 +50,12 @@ ADDED_ISSUE_COLUMNS = {
     "body": "TEXT",  # the issue's description, shortened
     "summary": "TEXT",  # AI summary
     "summary_lang": "TEXT",  # language the summary is written in
-    "difficulty": "TEXT",  # easy | medium | hard
-    "effort": "TEXT",  # under_1h | 1_3h | 3_8h | over_1d
+    "summary_version": "INTEGER",  # which version of the AI instructions wrote it
+    "difficulty": "TEXT",  # no longer used: small models couldn't judge difficulty (see kinds.py)
+    "effort": "TEXT",  # no longer used: small models couldn't estimate time
     "availability": "TEXT",  # open | taken | closed, from the last check on GitHub
     "checked_at": "TEXT",  # when we last checked that
+    "labels": "TEXT",  # the issue's GitHub labels, as a JSON list
 }
 
 # Issues that are no longer free on GitHub are dropped from "new".
@@ -91,8 +94,8 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
         cursor = conn.execute(
             """
             INSERT OR IGNORE INTO issues
-                (id, repo, title, url, stars, language, created_at, found_at, body, availability, checked_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
+                (id, repo, title, url, stars, language, created_at, found_at, body, availability, checked_at, labels)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
             """,
             (
                 issue["id"],
@@ -105,6 +108,7 @@ def save_issues(conn: sqlite3.Connection, issues: list[dict], language: str) -> 
                 now,
                 (issue.get("body") or "")[:BODY_MAX_LENGTH],
                 now,  # the search just checked that nobody has taken it
+                json.dumps([label["name"] for label in issue.get("labels", [])]),
             ),
         )
         if cursor.rowcount == 1:
@@ -140,18 +144,18 @@ def get_issue(conn: sqlite3.Connection, issue_id: int) -> sqlite3.Row | None:
     return conn.execute("SELECT * FROM issues WHERE id = ?", (issue_id,)).fetchone()
 
 
-def issues_to_summarize(conn: sqlite3.Connection, lang: str, limit: int) -> list[sqlite3.Row]:
-    """New issues without a summary in `lang` yet, newest first, skipping hidden projects."""
+def issues_to_summarize(conn: sqlite3.Connection, lang: str, version: int, limit: int) -> list[sqlite3.Row]:
+    """Issues without an up-to-date summary in `lang`, newest first, skipping hidden projects."""
     return conn.execute(
-        """
+        f"""
         SELECT * FROM issues
         WHERE (status = 'interested' OR (status = 'new' AND {_STILL_FREE}))
-          AND (summary IS NULL OR summary_lang IS NOT ?)
+          AND (summary IS NULL OR summary_lang IS NOT ? OR COALESCE(summary_version, 1) < ?)
           AND repo NOT IN (SELECT repo FROM blocked_repos)
         ORDER BY created_at DESC
         LIMIT ?
-        """.format(_STILL_FREE=_STILL_FREE),
-        (lang, limit),
+        """,
+        (lang, version, limit),
     ).fetchall()
 
 
@@ -161,18 +165,22 @@ def issues_to_recheck(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]
         f"""
         SELECT id, url FROM issues
         WHERE status IN ('new', 'interested') AND {_STILL_FREE}
-        ORDER BY checked_at IS NOT NULL, checked_at
+        ORDER BY labels IS NOT NULL, checked_at IS NOT NULL, checked_at
         LIMIT ?
         """,
         (limit,),
     ).fetchall()
 
 
-def set_availability(conn: sqlite3.Connection, results: dict[int, str]) -> None:
+def set_availability(conn: sqlite3.Connection, results: dict[int, str], labels: dict[int, list[str]]) -> None:
     now = datetime.now(timezone.utc).isoformat()
     conn.executemany(
         "UPDATE issues SET availability = ?, checked_at = ? WHERE id = ?",
         [(availability, now, issue_id) for issue_id, availability in results.items()],
+    )
+    conn.executemany(
+        "UPDATE issues SET labels = ? WHERE id = ?",
+        [(json.dumps(names), issue_id) for issue_id, names in labels.items()],
     )
 
 
@@ -181,11 +189,16 @@ def set_body(conn: sqlite3.Connection, issue_id: int, body: str) -> None:
 
 
 def save_summary(
-    conn: sqlite3.Connection, issue_id: int, summary: str, difficulty: str, effort: str, lang: str
+    conn: sqlite3.Connection, issue_id: int, summary: str, lang: str, version: int
 ) -> None:
+    """Save the AI's answer. An empty summary means "nothing worth showing"."""
     conn.execute(
-        "UPDATE issues SET summary = ?, difficulty = ?, effort = ?, summary_lang = ? WHERE id = ?",
-        (summary, difficulty, effort, lang, issue_id),
+        """
+        UPDATE issues
+        SET summary = ?, difficulty = NULL, effort = NULL, summary_lang = ?, summary_version = ?
+        WHERE id = ?
+        """,
+        (summary, lang, version, issue_id),
     )
 
 

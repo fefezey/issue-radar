@@ -1,9 +1,14 @@
 from datetime import datetime, timezone
 
+import json
+import re
+
 from flask import Flask, abort, g, redirect, render_template, request, url_for
+from markupsafe import Markup, escape
 
 from issue_radar import ai, db, settings
 from issue_radar.i18n import DEFAULT_LANGUAGE, available_languages, translate
+from issue_radar.kinds import kind_of
 from issue_radar.languages import SUPPORTED_LANGUAGES, language_name
 from issue_radar.scanner import status, wake
 
@@ -48,6 +53,12 @@ def ago(timestamp: str) -> str:
     return t("time.days", int(seconds // 86400))
 
 
+@app.template_filter("code")
+def code(text: str) -> Markup:
+    """Show `backticked` parts of AI summaries as code. Everything else stays plain text."""
+    return Markup(re.sub(r"`([^`\n]+)`", r"<code>\1</code>", str(escape(text))))
+
+
 @app.template_filter("stars")
 def stars(count: int) -> str:
     """1234 -> '1.2k stars'"""
@@ -90,6 +101,16 @@ def index():
             # Projects you haven't contributed to yet come first; newest first within each group.
             new_issues = sorted(new_issues, key=lambda issue: issue["repo"] in contributed)
         hidden_repos = db.list_blocked_repos(conn)
+        new_count = len(new_issues)
+        # Docs, tests and translations are the gentlest first contributions.
+        kinds = {
+            issue["id"]: kind_of(issue["title"], json.loads(issue["labels"] or "[]"))
+            for issue in new_issues + interested_issues
+        }
+        easy_count = sum(1 for issue in new_issues if kinds[issue["id"]])
+        easy_only = request.args.get("easy") == "1"
+        if easy_only:
+            new_issues = [issue for issue in new_issues if kinds[issue["id"]]]
         undo_issue = request.args.get("undo_issue", type=int)
         skipped = db.get_issue(conn, undo_issue) if undo_issue else None
 
@@ -97,7 +118,10 @@ def index():
         "index.html",
         tab=tab,
         issues=new_issues if tab == "new" else interested_issues,
-        counts={"new": len(new_issues), "interested": len(interested_issues), "hidden": len(hidden_repos)},
+        counts={"new": new_count, "interested": len(interested_issues), "hidden": len(hidden_repos)},
+        kinds=kinds,
+        easy_count=easy_count,
+        easy_only=easy_only,
         hidden_repos=hidden_repos,
         skipped=skipped,
         hidden_repo=request.args.get("undo_repo"),

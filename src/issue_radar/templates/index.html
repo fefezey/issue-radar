@@ -21,6 +21,7 @@
       --bg: #F3F4F6;
       --surface: #FFFFFF;
       --raised: #E8EBEF;
+      --border-strong: #D1D5DB;
       --warn-dot: #B45309;
       --border: #E5E7EB;
       --text: #111827;
@@ -52,6 +53,7 @@
         --raised: #1A2230;
         --warn-dot: #F59E0B;
         --border: #263042;
+        --border-strong: #374151;
         --text: #E5E7EB;
         --text-2: #D1D5DB;
         --muted: #9CA3AF;
@@ -107,9 +109,12 @@
       color: var(--muted);
     }
     .scan::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
-    .scan.busy::before { background: var(--accent); animation: pulse 1600ms ease-in-out infinite alternate; }
+    .scan.busy::before { background: var(--accent); }
     .scan.failed::before { background: var(--warn-dot); }
-    @keyframes pulse { to { opacity: 0.35; } }
+    /* While scanning, the radar's sweep turns. */
+    .sweep { transform-box: view-box; transform-origin: 32px 32px; }
+    header:has(.scan.busy) .sweep { animation: sweep 2400ms linear infinite; }
+    @keyframes sweep { to { transform: rotate(360deg); } }
     .lang { margin: 0; display: flex; border: 1px solid var(--border); border-radius: 8px; }
     .lang button {
       font: inherit;
@@ -132,6 +137,10 @@
     @media (max-width: 560px) {
       .lang { margin-left: auto; }
       .scan { order: 1; flex-basis: 100%; margin-left: 0; }
+    }
+    /* Touch screens get larger buttons. */
+    @media (pointer: coarse) {
+      .btn { min-height: 40px; }
     }
 
     .layout {
@@ -173,18 +182,27 @@
     }
     .count.new { background: var(--accent); color: #FFFFFF; }
 
-    main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-    h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-    .subtitle { margin: -10px 0 4px; font-size: 13px; color: var(--muted); }
+    main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+    h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+    .subtitle { margin: -6px 0 4px; font-size: 13px; color: var(--muted); }
+    .filters { display: flex; gap: 4px; margin: 0 0 4px; font-size: 13px; }
+    .filters a {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      color: var(--text-2);
+      text-decoration: none;
+    }
+    .filters a[aria-current="true"] { background: var(--surface); border-color: var(--accent); color: var(--text); }
 
     article {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px 24px;
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       transition:
         opacity var(--dur-2) var(--ease-in),
         transform var(--dur-2) var(--ease-in),
@@ -201,11 +219,33 @@
       padding-top: 0;
       padding-bottom: 0;
       border-width: 0;
-      margin-bottom: -16px;
+      margin-bottom: -12px;
     }
-    .meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
-    .meta .repo { color: var(--text); font-weight: 500; }
-    h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin: 0; overflow-wrap: anywhere; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .meta .repo { color: var(--text-2); font-weight: 500; }
+    .meta .sep { color: var(--border-strong); }
+    .meta .badge { font-size: 12px; padding: 2px 8px; }
+    h2 {
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 0;
+      overflow-wrap: anywhere;
+      text-wrap: pretty;
+      /* Very long titles: show three lines; the full title is on GitHub. */
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     h2 a { text-decoration: none; }
     h2 a:hover { text-decoration: underline; }
     .badge {
@@ -227,43 +267,38 @@
     .badge.known { color: var(--muted); }
     .badge.known::before { background: var(--muted); border-radius: 2px; }
     .badge.plain::before { content: none; }
-    /* Difficulty: color and shape, so it doesn't depend on color alone. */
-    .badge.easy { color: var(--ok); background: var(--ok-bg); }
-    .badge.easy::before { border-radius: 50%; background: var(--ok-dot); }
-    .badge.medium { color: var(--medium); background: var(--medium-bg); }
-    .badge.medium::before { border-radius: 2px; background: var(--medium-dot); }
-    .badge.hard { color: var(--hard); background: var(--hard-bg); }
-    .badge.hard::before { width: 7px; height: 7px; transform: rotate(45deg); background: var(--hard-dot); }
+    /* Docs, tests, translations: the gentlest first contributions. */
+    .badge.kind { color: var(--ok); background: var(--ok-bg); }
+    .badge.kind::before { border-radius: 50%; background: var(--ok-dot); }
 
     .summary {
       margin: 0;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
+      border-left: 2px solid var(--border-strong);
+      padding: 2px 0 2px 12px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
-    .summary p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+    .summary p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-2); }
     .summary-label {
       font-family: "Geist Mono", ui-monospace, monospace;
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.04em;
       color: var(--muted);
     }
     .summary.pending { font-size: 13px; color: var(--muted); }
 
     .actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .actions form { margin: 0; }
+    /* The quieter, more lasting action sits apart on the right. */
+    .actions form:last-child { margin-left: auto; }
     .btn {
       font: inherit;
-      font-size: 14px;
-      min-height: 40px;
-      padding: 0 16px;
+      font-size: 13.5px;
+      min-height: 34px;
+      padding: 0 12px;
       border-radius: 8px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-strong);
       background: transparent;
       color: var(--text);
       cursor: pointer;
@@ -325,7 +360,7 @@
       min-height: 36px;
       padding: 0 14px;
       border-radius: 999px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-strong);
       color: var(--muted);
       cursor: pointer;
       font-size: 14px;
@@ -339,7 +374,7 @@
       min-height: 40px;
       padding: 0 10px;
       border-radius: 8px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-strong);
       background: var(--bg);
       color: var(--text);
       align-self: flex-start;
@@ -401,6 +436,20 @@
     .toast button:hover { background: rgba(255, 255, 255, 0.08); }
     .toast span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .toast.leaving { opacity: 0; transform: translate(-50%, 4px); }
+
+    /* Wide screens: the menu stays in view while you scroll the list. */
+    @media (min-width: 800px) {
+      nav { position: sticky; top: 24px; }
+    }
+    /* Narrow screens: the menu becomes a row of tabs above the list. */
+    @media (max-width: 799px) {
+      .bar { padding: 12px 16px; }
+      .layout { padding: 16px 16px 80px; gap: 16px; }
+      nav { flex: 1 1 100%; flex-direction: row; overflow-x: auto; gap: 4px; }
+      nav a { min-height: 36px; white-space: nowrap; flex: none; }
+      article, fieldset, .panel { padding: 16px; }
+      h1 { font-size: 22px; }
+    }
     @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 
     @media (prefers-reduced-motion: reduce) {
@@ -416,10 +465,12 @@
 <header>
   <div class="bar">
     <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M32 32 L32 6 A26 26 0 0 1 50.38 13.62 Z" fill="var(--mark)" fill-opacity="0.22"/>
       <circle cx="32" cy="32" r="26" fill="none" stroke="var(--mark)" stroke-width="4"/>
       <circle cx="32" cy="32" r="14" fill="none" stroke="var(--mark)" stroke-width="4" stroke-opacity="0.55"/>
-      <path d="M32 32 L50.38 13.62" stroke="var(--mark)" stroke-width="4" stroke-linecap="round"/>
+      <g class="sweep">
+        <path d="M32 32 L32 6 A26 26 0 0 1 50.38 13.62 Z" fill="var(--mark)" fill-opacity="0.22"/>
+        <path d="M32 32 L50.38 13.62" stroke="var(--mark)" stroke-width="4" stroke-linecap="round"/>
+      </g>
       <circle cx="40.5" cy="14" r="4" fill="var(--blip)"/>
     </svg>
     <span class="brand">issue radar</span>
@@ -521,6 +572,12 @@
       <h1>{{ t('nav.new') if tab == 'new' else t('nav.interested') }}</h1>
       {% if tab == 'new' %}
         <p class="subtitle">{{ t('new.subtitle') }}</p>
+        {% if easy_count or easy_only %}
+          <div class="filters" role="group" aria-label="{{ t('filter.label') }}">
+            <a href="{{ url_for('index') }}" aria-current="{{ 'false' if easy_only else 'true' }}">{{ t('filter.all') }}</a>
+            <a href="{{ url_for('index', easy=1) }}" aria-current="{{ 'true' if easy_only else 'false' }}">{{ t('filter.easy', easy_count) }}</a>
+          </div>
+        {% endif %}
         {% if error_kind == 'no_token' %}
           <p class="notice error" role="status">
             <strong>{{ t('error.no_token.title') }}</strong> {{ t('error.no_token.text') }}
@@ -536,19 +593,18 @@
       {% for issue in issues %}
         <article data-id="{{ issue.id }}" data-repo="{{ issue.repo }}" data-url="{{ issue.url }}"
                  data-restore="{{ url_for('restore', issue_id=issue.id) }}">
+          {# One line: kind of work, project, stars, language, age, then any notes. #}
           <div class="meta">
-            <span class="repo mono">{{ issue.repo }}</span>
-            <span>{{ issue.stars | stars }}</span>
-            <span>{{ issue.language | language }}</span>
-            <span>{{ issue.created_at | ago }}</span>
-          </div>
-          <h2 lang="en"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
-
-          <div class="badges">
-            {% if issue.difficulty %}
-              <span class="badge {{ issue.difficulty }}">{{ t('difficulty.' ~ issue.difficulty) }}</span>
-              <span class="badge plain">{{ t('effort.' ~ issue.effort) }}</span>
+            {% if kinds[issue.id] %}
+              <span class="badge kind">{{ t('kind.' ~ kinds[issue.id]) }}</span>
             {% endif %}
+            <span class="repo mono">{{ issue.repo }}</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>{{ issue.stars | stars }}</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>{{ issue.language | language }}</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>{{ issue.created_at | ago }}</span>
             {% if tab == 'new' and issue.repo in contributed %}
               <span class="badge known">{{ t('issue.contributed_before', contributed[issue.repo]) }}</span>
             {% endif %}
@@ -556,13 +612,14 @@
               <span class="badge gone">{{ t('issue.' ~ issue.availability) }}</span>
             {% endif %}
           </div>
+          <h2 lang="en" title="{{ issue.title }}"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
 
           {% if issue.summary %}
             <div class="summary">
-              <span class="summary-label" title="{{ t('ai.note') }}">{{ t('ai.label') }}</span>
-              <p lang="{{ issue.summary_lang }}">{{ issue.summary }}</p>
+              <span class="summary-label">{{ t('ai.label') }} · <span title="{{ t('ai.note') }}">{{ t('ai.maybe_wrong') }}</span></span>
+              <p lang="{{ issue.summary_lang }}">{{ issue.summary | code }}</p>
             </div>
-          {% elif ai_on and issue.id not in ai_failed %}
+          {% elif issue.summary is none and ai_on and issue.id not in ai_failed %}
             <p class="summary pending">{{ t('ai.pending') }}</p>
           {% endif %}
 
@@ -602,6 +659,9 @@
             {% if scanning %}
               <strong>{{ t('empty.scanning.title') }}</strong>
               <span>{{ t('empty.scanning.text') }}</span>
+            {% elif easy_only %}
+              <strong>{{ t('empty.easy.title') }}</strong>
+              <span>{{ t('empty.easy.text') }}</span>
             {% else %}
               <strong>{{ t('empty.new.title') }}</strong>
               <span>{{ t('empty.new.text') }}</span>
