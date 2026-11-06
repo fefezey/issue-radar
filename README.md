@@ -17,22 +17,22 @@ It runs on your own computer: no account, no server, your choices stay on your d
 
 ## Features
 
-- 🔍 **Finds new beginner issues** in the languages you choose, newest first — labeled `good first issue`, `good-first-issue`, `first-timers-only`, `beginner` or `beginner-friendly`.
-- 🧭 **Is this project friendly to newcomers?** — each project shows what it is in one line, and how many pull requests from outside its team it merged in the last three months. A project that merges none is marked.
-- 🗂️ **Grouped by project** — one busy project can't fill the whole list; its other issues fold under "N more issues from this project".
-- ⭐ **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
-- 🌱 **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
-- ⚡ **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this". Saved issues are checked again on every scan, so ones that were closed or taken later drop out too.
-- 🤖 **AI summaries, free and private** — a small model on your own computer (via [Ollama](https://ollama.com)) explains each issue in two sentences in your language. Optional; without it you just don't see summaries.
-- 📄 **Docs, tests and translations marked** — the gentlest first contributions, found from the issue's title and GitHub labels, with a filter to see only those.
-- 🔔 **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
-- 🖥️ **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
-- ✍️ **Claim it** — *Interested* opens a ready-to-post comment ("I'd like to work on this… could you assign it to me?") with a line for your own plan, and a button that copies it and opens the issue. If the project's contributing guide says not to ask first, you're told so.
-- 🧗 **Follow your progress** — for issues you're interested in, Issue Radar reads GitHub on every scan and shows where you are: *Commented → Assigned → PR opened → Merged*, with the next step (including the `Fixes #123` line that links your pull request).
-- 🗺️ **Where to start** — a guide for each issue you're interested in: the files named in the issue that really exist in the project (with links), the project's setup and test commands from its contributing guide and README, and a plain explanation written by the local AI. A Mac notification tells you when you're assigned, when your pull request is merged, or when someone else takes an issue you wanted.
-- ⚙️ **Settings page** — pick the languages to search and the minimum stars.
-- 🌍 **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
-- 🌗 Light and dark theme, following your system.
+- **Finds new beginner issues** in the languages you choose, newest first — labeled `good first issue`, `good-first-issue`, `first-timers-only`, `beginner` or `beginner-friendly`.
+-  **Is this project friendly to newcomers?** — each project shows what it is in one line, and how many pull requests from outside its team it merged in the last three months. A project that merges none is marked.
+-  **Grouped by project** — one busy project can't fill the whole list; its other issues fold under "N more issues from this project".
+-  **Skips tiny projects** — only repositories with at least 100 stars (you can change this).
+-  **New projects first** — issues from projects you haven't sent a pull request to yet are listed first. Projects you already know are marked.
+-  **Filters out claimed issues** — assigned ones, ones with a linked pull request, and ones where someone commented "I'd like to work on this". Saved issues are checked again on every scan, so ones that were closed or taken later drop out too.
+-  **AI summaries, free and private** — a small model on your own computer (via [Ollama](https://ollama.com)) explains each issue in two sentences in your language. Optional; without it you just don't see summaries.
+-  **Docs, tests and translations marked** — the gentlest first contributions, found from the issue's title and GitHub labels, with a filter to see only those.
+-  **Mac notifications** — scans every 10 minutes and notifies you at most once an hour.
+-  **A simple web page** to go through issues: *Interested*, *Skip* or *Hide project*, with undo, without losing your place.
+-  **Claim it** — *Interested* opens a ready-to-post comment ("I'd like to work on this… could you assign it to me?") with a line for your own plan, and a button that copies it and opens the issue. If the project's contributing guide says not to ask first, you're told so.
+-  **Follow your progress** — for issues you're interested in, Issue Radar reads GitHub on every scan and shows where you are: *Commented → Assigned → PR opened → Merged*, with the next step (including the `Fixes #123` line that links your pull request).
+-  **Where to start** — a guide for each issue you're interested in: the files named in the issue that really exist in the project (with links), the project's setup and test commands from its contributing guide and README, and a plain explanation written by the local AI. A Mac notification tells you when you're assigned, when your pull request is merged, or when someone else takes an issue you wanted.
+-  **Settings page** — pick the languages to search and the minimum stars.
+-  **English and Turkish interface** — picks your browser's language, switch any time. Notifications follow the same language.
+-  Light and dark theme, following your system.
 
 ### Planned
 
