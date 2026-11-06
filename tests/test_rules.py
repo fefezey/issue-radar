@@ -67,7 +67,7 @@ def test_short_description_gets_no_summary_and_no_model_call(monkeypatch):
 
 
 def test_summary_in_the_wrong_language_is_retried_then_dropped(monkeypatch):
-    answers = iter([{"summary": "Update the docs."}, {"summary": "Still English."}])
+    answers = iter([{"summary": "Update the docs."}, {"summary": "Update the parser to handle empty files."}])
     monkeypatch.setattr(ai, "_ask", lambda *args: next(answers))
     assert ai.summarize("Title", "x" * 300, "owner/project", "tr") == ""
 
@@ -75,3 +75,35 @@ def test_summary_in_the_wrong_language_is_retried_then_dropped(monkeypatch):
 def test_good_summary_is_kept(monkeypatch):
     monkeypatch.setattr(ai, "_ask", lambda *args: {"summary": "`player.js` dosyasını güncellemelisin."})
     assert ai.summarize("Race condition", "x" * 300, "owner/project", "tr") == "`player.js` dosyasını güncellemelisin."
+
+
+def test_what_needs_translating():
+    assert ai.needs_translation("Add unit tests for GrpcStatus", "tr")
+    assert not ai.needs_translation("Birim testlerini ekle", "tr")
+    assert not ai.needs_translation("🐞", "tr")
+    assert not ai.needs_translation("Add unit tests", "en")
+    assert ai.needs_translation("文档和 CI 跟进默认分支改名", "en")
+
+
+def test_translation_drops_title_tags_and_bad_answers(monkeypatch):
+    sent = []
+
+    class Answer:
+        def __init__(self, translation):
+            self.translation = translation
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"message": {"content": '{"translation": "%s"}' % self.translation}}
+
+    def fake_post(url, json):
+        sent.append(json["messages"][1]["content"])
+        return Answer(replies.pop(0))
+
+    monkeypatch.setattr(ai.httpx, "post", lambda url, json, timeout: fake_post(url, json))
+    replies = ["Birim testlerini ekle", "Add unit tests"]
+    assert ai.translate("[Beginner]: Add unit tests", "GitHub issue title", "tr") == "Birim testlerini ekle"
+    assert sent[0] == "Add unit tests"  # the "[Beginner]:" tag isn't sent
+    assert ai.translate("Add unit tests", "GitHub issue title", "tr") == ""  # still English: thrown away

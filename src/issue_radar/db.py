@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS contributions (
     pull_requests INTEGER NOT NULL
 );
 
+-- Issue titles and project descriptions in your interface language,
+-- translated once by the local AI. An empty text means "keep the original".
+CREATE TABLE IF NOT EXISTS translations (
+    source TEXT NOT NULL,
+    lang   TEXT NOT NULL,
+    text   TEXT NOT NULL,
+    PRIMARY KEY (source, lang)
+);
+
 -- Star counts we already looked up, so we don't ask GitHub again every scan.
 CREATE TABLE IF NOT EXISTS repo_stars (
     repo       TEXT PRIMARY KEY,
@@ -238,6 +247,33 @@ def save_summary(
         WHERE id = ?
         """,
         (summary, lang, version, issue_id),
+    )
+
+
+def texts_on_the_list(conn: sqlite3.Connection) -> list[tuple[str, str]]:
+    """Titles of the issues you can see and descriptions of their projects,
+    as ("title" | "description", text), titles first."""
+    shown = f"(status = 'interested' OR (status = 'new' AND {_STILL_FREE})) AND repo NOT IN (SELECT repo FROM blocked_repos)"
+    titles = conn.execute(f"SELECT DISTINCT title FROM issues WHERE {shown} ORDER BY created_at DESC")
+    descriptions = conn.execute(
+        f"""
+        SELECT DISTINCT r.description FROM repo_stars r
+        WHERE r.description IS NOT NULL AND r.description != ''
+          AND r.repo IN (SELECT repo FROM issues WHERE {shown})
+        """
+    )
+    return [("title", row[0]) for row in titles] + [("description", row[0]) for row in descriptions]
+
+
+def load_translations(conn: sqlite3.Connection, lang: str) -> dict[str, str]:
+    """{original: translation} for a language; untranslatable texts map to ""."""
+    rows = conn.execute("SELECT source, text FROM translations WHERE lang = ?", (lang,))
+    return {row["source"]: row["text"] for row in rows}
+
+
+def save_translation(conn: sqlite3.Connection, source: str, lang: str, text: str) -> None:
+    conn.execute(
+        "INSERT OR REPLACE INTO translations (source, lang, text) VALUES (?, ?, ?)", (source, lang, text)
     )
 
 

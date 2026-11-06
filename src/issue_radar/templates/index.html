@@ -232,6 +232,14 @@
     .meta .repo { color: var(--text-2); font-weight: 500; }
     .meta .sep { color: var(--border-strong); }
     .meta .badge { font-size: 12px; padding: 2px 8px; }
+    .original {
+      margin: -6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     h2 {
       font-size: 17px;
       font-weight: 600;
@@ -461,6 +469,16 @@
       resize: vertical;
     }
     .draft-hint.warn { color: var(--medium); font-weight: 500; }
+    .draft-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px; }
+    .draft-tools .btn { min-height: 30px; padding: 0 10px; font-size: 13px; }
+    .draft-reading {
+      border-left: 2px solid var(--border-strong);
+      padding: 2px 0 2px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .draft-reading p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-2); white-space: pre-wrap; }
     .guide { max-height: 80vh; overflow-y: auto; }
     .guide-part { display: flex; flex-direction: column; gap: 6px; }
     .guide h3 { margin: 4px 0 0; font-size: 14px; font-weight: 600; }
@@ -580,7 +598,23 @@
     {% if tab == 'settings' %}
       <h1>{{ t('nav.settings') }}</h1>
       {% if saved %}<p class="notice" role="status">{{ t('settings.saved') }}</p>{% endif %}
-      {% if settings_error %}<p class="notice error" role="alert">{{ t('settings.error.no_language') }}</p>{% endif %}
+      {% if picked %}<p class="notice" role="status">{{ t('settings.github.picked') }}</p>{% endif %}
+      {% if settings_error in ('no_language', 'github_languages') %}
+        <p class="notice error" role="alert">{{ t('settings.error.' ~ settings_error) }}</p>
+      {% endif %}
+
+      <section class="panel">
+        <h2>{{ t('settings.github.title') }}</h2>
+        {% if github_login %}
+          <p class="hint">{{ t('settings.github.signed_in', login=github_login) }}</p>
+          <form method="post" action="{{ url_for('languages_from_github') }}">
+            <button class="btn">{{ t('settings.github.pick') }}</button>
+          </form>
+        {% else %}
+          <p class="hint">{{ t('settings.github.signed_out') }}</p>
+          <code class="cmd">gh auth login</code>
+        {% endif %}
+      </section>
 
       <form class="settings" method="post" action="{{ url_for('save_settings') }}">
         <fieldset>
@@ -614,17 +648,26 @@
       </form>
 
       <section class="panel">
-        <h2>{{ t('settings.ai.title') }}</h2>
-        {% if ai_state == 'on' %}
-          <p class="hint">{{ t('settings.ai.on', model=ai_model) }}</p>
-        {% elif ai_state == 'no_model' %}
-          <p class="hint">{{ t('settings.ai.no_model', model=ai_model) }}</p>
-          <code class="cmd">ollama pull {{ ai_model }}</code>
-        {% else %}
-          <p class="hint">{{ t('settings.ai.no_ollama') }}</p>
-          <code class="cmd">brew install ollama &amp;&amp; brew services start ollama &amp;&amp; ollama pull {{ ai_model }}</code>
-        {% endif %}
+        <h2>{{ t('settings.notify.title') }}</h2>
+        <p class="hint">{{ t('settings.notify.hint') }}</p>
+        <form method="post" action="{{ url_for('notify_test') }}" data-notify-test>
+          <button class="btn">{{ t('settings.notify.test') }}</button>
+        </form>
       </section>
+
+      {# Only worth showing when AI summaries are off: how to turn them on. #}
+      {% if ai_state != 'on' %}
+        <section class="panel">
+          <h2>{{ t('settings.ai.title') }}</h2>
+          {% if ai_state == 'no_model' %}
+            <p class="hint">{{ t('settings.ai.no_model', model=ai_model) }}</p>
+            <code class="cmd">ollama pull {{ ai_model }}</code>
+          {% else %}
+            <p class="hint">{{ t('settings.ai.no_ollama') }}</p>
+            <code class="cmd">brew install ollama &amp;&amp; brew services start ollama &amp;&amp; ollama pull {{ ai_model }}</code>
+          {% endif %}
+        </section>
+      {% endif %}
 
     {% elif tab == 'hidden' %}
       <h1>{{ t('nav.hidden') }}</h1>
@@ -685,7 +728,13 @@
               <span class="badge gone">{{ t('issue.' ~ issue.availability) }}</span>
             {% endif %}
           </div>
-          <h2 lang="en" title="{{ issue.title }}"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ issue.title }}</a></h2>
+          {# The title in your language when we have a translation; the original stays
+             underneath, to check the translation and to find the issue on GitHub. #}
+          {% set shown_title = translations.get(issue.title) or issue.title %}
+          <h2 lang="{{ lang if shown_title != issue.title else 'en' }}" title="{{ issue.title }}"><a href="{{ issue.url }}" target="_blank" rel="noopener">{{ shown_title }}</a></h2>
+          {% if shown_title != issue.title %}
+            <p class="original" lang="en">{{ issue.title }}</p>
+          {% endif %}
 
           {% if tab == 'interested' %}
             {# How far you've got, read from GitHub on every scan. #}
@@ -803,7 +852,7 @@
                 {% endif %}
               </div>
               {% if info and info.description %}
-                <p class="about" title="{{ info.description }}">{{ info.description }}</p>
+                <p class="about" title="{{ info.description }}" lang="{{ lang if translations.get(info.description) else 'en' }}">{{ translations.get(info.description) or info.description }}</p>
               {% endif %}
               {% if info and info.outside_merged is not none %}
                 {% if info.outside_merged %}
@@ -842,6 +891,20 @@
     <label class="hint" for="draft-text">{{ t('draft.intro') }}</label>
     <textarea id="draft-text" rows="7" lang="en" spellcheck="true"></textarea>
     <p class="hint draft-hint">{{ t('draft.hint') }}</p>
+    {# Write in your own language and turn it into English, or read the English in yours.
+       Uses the local AI model, so only shown when it's on. #}
+    {% if ai_on %}
+      <div class="draft-tools">
+        {% if lang != 'en' %}
+          <button type="button" class="btn quiet" data-translate="read">{{ t('draft.show_mine') }}</button>
+        {% endif %}
+        <button type="button" class="btn quiet" data-translate="english">{{ t('draft.to_english') }}</button>
+      </div>
+      <div class="draft-reading" hidden>
+        <span class="summary-label">{{ t('draft.reading_label') }} · {{ t('ai.maybe_wrong') }}</span>
+        <p lang="{{ lang }}"></p>
+      </div>
+    {% endif %}
     <div class="actions">
       <button type="button" class="btn primary" data-copy>{{ t('draft.copy') }}</button>
       <button class="btn quiet">{{ t('draft.close') }}</button>
@@ -913,8 +976,16 @@
     "copyAnyway": t("draft.copy_anyway"),
     "copied": t("draft.copied"),
     "explaining": t("guide.explaining"),
+    "notifySent": t("settings.notify.sent"),
+    "showMine": t("draft.show_mine"),
+    "hideMine": t("draft.hide_mine"),
+    "toEnglish": t("draft.to_english"),
+    "translating": t("draft.translating"),
+    "translatedUndo": t("draft.translated_undo"),
+    "translateFailed": t("draft.translate_failed"),
   } | tojson }};
   const UNBLOCK_URL = {{ url_for('unblock') | tojson }};
+  const LANG = {{ lang | tojson }};
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function post(url, body) {
@@ -1050,6 +1121,19 @@
     setTimeout(() => { if (!document.querySelector("main article")) location.reload(); }, 500);
   });
 
+  // --- Test notification, from the settings page. ---
+  document.querySelector("[data-notify-test]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.target.querySelector("button");
+    button.disabled = true;
+    try {
+      await post(event.target.action);
+      button.textContent = TEXT.notifySent;
+    } finally {
+      setTimeout(() => { button.disabled = false; }, 3000);
+    }
+  });
+
   // --- Comment draft for claiming an issue. ---
   const draftDialog = document.getElementById("draft");
   const draftText = draftDialog.querySelector("textarea");
@@ -1061,6 +1145,67 @@
     draftText.focus();
     if (start >= 0) draftText.setSelectionRange(start, start + draftDialog.dataset.placeholder.length);
   }
+
+  // --- Translating your comment: into English to post, or into your language to read. ---
+  const readButton = draftDialog.querySelector('[data-translate="read"]');
+  const englishButton = draftDialog.querySelector('[data-translate="english"]');
+  const reading = draftDialog.querySelector(".draft-reading");
+  let beforeEnglish = null;  // your text before "Translate to English", for undo
+
+  function resetTranslateTools() {
+    if (!englishButton) return;
+    beforeEnglish = null;
+    englishButton.textContent = TEXT.toEnglish;
+    englishButton.disabled = false;
+    if (readButton) { readButton.textContent = TEXT.showMine; readButton.disabled = false; }
+    reading.hidden = true;
+  }
+
+  async function translateText(text, to) {
+    try {
+      const response = await fetch("/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, to }),
+      });
+      return (await response.json()).text;
+    } catch {
+      return null;
+    }
+  }
+
+  readButton?.addEventListener("click", async () => {
+    if (!reading.hidden) { reading.hidden = true; readButton.textContent = TEXT.showMine; return; }
+    readButton.disabled = true;
+    readButton.textContent = TEXT.translating;
+    const result = await translateText(draftText.value, LANG);
+    readButton.disabled = false;
+    readButton.textContent = result ? TEXT.hideMine : TEXT.translateFailed;
+    if (result) {
+      reading.querySelector("p").textContent = result;
+      reading.hidden = false;
+    }
+  });
+
+  englishButton?.addEventListener("click", async () => {
+    if (beforeEnglish !== null) {  // undo
+      draftText.value = beforeEnglish;
+      beforeEnglish = null;
+      englishButton.textContent = TEXT.toEnglish;
+      return;
+    }
+    englishButton.disabled = true;
+    englishButton.textContent = TEXT.translating;
+    const original = draftText.value;
+    const result = await translateText(original, "en");
+    englishButton.disabled = false;
+    if (!result) { englishButton.textContent = TEXT.translateFailed; return; }
+    beforeEnglish = original;
+    draftText.value = result;
+    englishButton.textContent = TEXT.translatedUndo;
+    reading.hidden = true;
+    if (readButton) readButton.textContent = TEXT.showMine;
+  });
 
   async function openDraft(issueId) {
     let data;
@@ -1077,6 +1222,7 @@
     draftText.value = data.draft;
     draftHint.classList.remove("warn");
     copyButton.textContent = TEXT.copy;
+    resetTranslateTools();
     draftDialog.showModal();
     selectPlaceholder();  // ready to type over
   }

@@ -98,3 +98,28 @@ def test_repo_info_counts_outsiders_merged_pull_requests(monkeypatch):
         github, "_client", lambda: httpx.Client(base_url=github.API_URL, transport=httpx.MockTransport(answer))
     )
     assert github.repo_info("o/p") == {"description": "A project.", "stars": 42, "outside_merged": 2}
+
+
+def test_guess_languages_from_your_repos(monkeypatch):
+    own = [
+        {"full_name": "me/a", "language": "C", "fork": False},
+        {"full_name": "me/b", "language": "C", "fork": False},
+        {"full_name": "me/site", "language": "HTML", "fork": False},  # not a language we search
+        {"full_name": "me/fork", "language": "Rust", "fork": True},  # someone else's code
+        {"full_name": "me/c", "language": "Python", "fork": False},
+    ]
+    languages = {"x/ts": "TypeScript", "y/cpp": "C++"}
+
+    def answer(request):
+        if request.url.path == "/users/me/repos":
+            return httpx.Response(200, json=own)
+        name = request.url.path.removeprefix("/repos/")
+        if name not in languages:
+            return httpx.Response(404)
+        return httpx.Response(200, json={"language": languages[name]})
+
+    monkeypatch.setattr(
+        github, "_client", lambda: httpx.Client(base_url=github.API_URL, transport=httpx.MockTransport(answer))
+    )
+    # Contributions count double; your own repos once; gone repos are skipped.
+    assert github.guess_languages("me", ["x/ts", "gone/repo", "y/cpp", "me/a"]) == ["c", "typescript", "cpp", "python"]

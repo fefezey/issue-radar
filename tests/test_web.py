@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_issue
-from issue_radar import db
+from issue_radar import db, settings
 from issue_radar.i18n import available_languages, translate
 from issue_radar.web import app, code
 
@@ -90,3 +90,69 @@ def test_plural_forms():
     assert translate("en", "issue.stars", 1, stars="1") == "1 star"
     assert translate("en", "issue.stars", 3, stars="3") == "3 stars"
     assert translate("tr", "issue.stars", 3, stars="3") == "3 yıldız"
+
+
+def test_translated_title_shows_with_the_original_underneath(client):
+    with db.connect() as conn:
+        db.set_setting(conn, "language", "tr")
+        db.save_translation(conn, "Issue 1", "tr", "1 numaralı iş")
+    page = client.get("/").get_data(as_text=True)
+    assert "1 numaralı iş</a></h2>" in page
+    assert '<p class="original" lang="en">Issue 1</p>' in page
+
+
+def test_comment_translation_needs_the_ai(client, monkeypatch):
+    from issue_radar import ai
+
+    monkeypatch.setitem(ai.status, "available", False)
+    assert client.post("/translate", json={"text": "Merhaba", "to": "en"}).get_json() == {"text": None}
+    assert client.post("/translate", json={"text": "", "to": "en"}).status_code == 400
+    assert client.post("/translate", json={"text": "Hi", "to": "xx"}).status_code == 400
+
+    monkeypatch.setitem(ai.status, "available", True)
+    monkeypatch.setattr(ai, "translate", lambda text, kind, lang: "I'd like to work on this.")
+    assert client.post("/translate", json={"text": "Bu işi almak istiyorum.", "to": "en"}).get_json() == {
+        "text": "I'd like to work on this."
+    }
+
+
+def test_test_notification_button(client, monkeypatch):
+    import issue_radar.web as web
+
+    sent = []
+    monkeypatch.setattr(web, "notify", lambda *parts: sent.append(parts))
+    assert client.post("/notify-test", headers={"X-Requested-With": "fetch"}).status_code == 204
+    assert sent and sent[0][0] == "Issue Radar"
+    assert "data-notify-test" in client.get("/?tab=settings").get_data(as_text=True)
+
+
+def test_languages_from_github(client, monkeypatch):
+    import issue_radar.web as web
+    from issue_radar import github
+
+    monkeypatch.setattr(web, "_github_login", {})
+    monkeypatch.setattr(github, "whoami", lambda: "me")
+    monkeypatch.setattr(github, "guess_languages", lambda login, contributed: ["c", "typescript"])
+    monkeypatch.setattr(github, "contributed_repos", lambda: {})
+    page = client.get("/?tab=settings").get_data(as_text=True)
+    assert "gh auth login" not in page and "/languages/from-github" in page
+
+    response = client.post("/languages/from-github")
+    assert "picked=1" in response.headers["Location"]
+    with db.connect() as conn:
+        assert set(settings.search_languages(conn)) == {"c", "typescript"}
+
+    monkeypatch.setattr(github, "guess_languages", lambda login, contributed: [])
+    assert "error=github_languages" in client.post("/languages/from-github").headers["Location"]
+
+
+def test_first_run_picks_languages_only_once(monkeypatch):
+    from issue_radar import scanner
+
+    monkeypatch.setattr(scanner, "_looked_at_github_languages", False)
+    monkeypatch.setattr(settings, "languages_from_github", lambda: ["go"])
+    with db.connect() as conn:
+        settings.save_languages(conn, ["rust"])  # you picked these yourself
+    scanner.pick_languages_on_first_run()
+    with db.connect() as conn:
+        assert settings.search_languages(conn) == ["rust"]

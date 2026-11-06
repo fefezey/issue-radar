@@ -7,6 +7,7 @@ environment variable (default: gemma3:4b).
 
 import json
 import os
+import re
 import threading
 
 import httpx
@@ -76,16 +77,31 @@ _ADDRESS = {
     "en": 'Speak to the reader directly ("you").',
 }
 
-# A Turkish summary should have Turkish letters or common Turkish words;
-# small models sometimes answer in English anyway.
+# Small models sometimes answer in English anyway. Turkish text usually has
+# Turkish letters or words; short text may have neither ("Birim testlerini ekle"),
+# so then we look for common English words instead.
 _TURKISH_HINTS = ("ç", "ğ", "ı", "ö", "ş", "ü", " ve ", " bir ", " için ", " bu ")
+_ENGLISH_WORDS = {
+    "the", "a", "an", "and", "or", "for", "to", "of", "in", "on", "with", "is", "are", "be",
+    "add", "fix", "update", "remove", "make", "use", "when", "should", "not", "it", "this", "that",
+}
+
+
+def _looks_turkish(text: str) -> bool:
+    padded = f" {text.lower()} "
+    if any(hint in padded for hint in _TURKISH_HINTS):
+        return True
+    words = {word.strip(".,:;!?()'\"") for word in text.lower().split()}
+    return not words & _ENGLISH_WORDS
 
 
 def _in_language(text: str, lang: str) -> bool:
-    if lang != "tr":
-        return True
-    text = f" {text.lower()} "
-    return any(hint in text for hint in _TURKISH_HINTS)
+    if lang == "tr":
+        return _looks_turkish(text)
+    if lang == "en":
+        # Turkish letters in an "English" answer mean the model didn't translate.
+        return not any(letter in text.lower() for letter in "çğışöü")
+    return True
 
 
 def _repeats_title(summary: str, title: str) -> bool:
@@ -172,7 +188,7 @@ def _summarize_batch() -> int:
         try:
             summary = summarize(issue["title"], body, issue["repo"], lang)
         except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as error:
-            print(f"Özet hazırlanamadı ({issue['url']}): {error}", flush=True)
+            print(f"Couldn't summarize ({issue['url']}): {error}", flush=True)
             _failed.add(issue["id"])
             continue
 
@@ -183,12 +199,93 @@ def _summarize_batch() -> int:
     return done
 
 
+_TRANSLATE_INSTRUCTIONS = """\
+Translate this {kind} into {language}. Write natural {language}, as a person
+would, not word for word. {address} Keep exactly as they are: code, file names,
+function and class names, commands, version numbers, product and project names,
+issue numbers like #123, @mentions, links, and anything in `backticks` or
+[square brackets]. Translate every ordinary word, even one that looks like a name.
+Sentences already in {language} stay exactly as they are. Keep the same line
+breaks. Answer in JSON with one field: "translation".
+"""
+
+_TRANSLATE_ADDRESS = {
+    "tr": 'For instructions use the informal "sen" form, like "ekle" or "düzelt", never "ekleyin".',
+    "en": "Keep the friendly, polite tone of a message to open-source maintainers.",
+}
+
+# Tags some projects put before titles: "[Bug] ", "[Good First Issue]: ".
+_TITLE_TAGS = re.compile(r"^(?:\s*\[[^\]]{1,40}\]:?)+\s*")
+
+
+def needs_translation(text: str, lang: str) -> bool:
+    """True if the text isn't already in the interface language."""
+    letters = [c for c in text if c.isalpha()]
+    if len(letters) < 3:  # "🐞" and the like
+        return False
+    if lang == "tr":
+        return not _in_language(text, "tr")
+    # For English: translate text that is mostly in another script (Chinese, Russian…).
+    return sum(not c.isascii() for c in letters) / len(letters) > 0.3
+
+
+def translate(text: str, kind: str, lang: str) -> str:
+    """The text in the interface language, or "" if the model's answer won't do."""
+    language = _LANGUAGE_NAMES.get(lang, "English")
+    instructions = _TRANSLATE_INSTRUCTIONS.format(kind=kind, language=language, address=_TRANSLATE_ADDRESS.get(lang, ""))
+    if "title" in kind:
+        text = _TITLE_TAGS.sub("", text) or text  # the tags are noise; the original title keeps them
+    response = httpx.post(
+        f"{OLLAMA_URL}/api/chat",
+        json={
+            "model": MODEL,
+            "stream": False,
+            "format": {"type": "object", "properties": {"translation": {"type": "string"}}, "required": ["translation"]},
+            "keep_alive": KEEP_LOADED,
+            "options": {"temperature": 0.1, "num_ctx": CONTEXT_SIZE},
+            "messages": [
+                {"role": "system", "content": instructions},
+                {"role": "user", "content": text},
+            ],
+        },
+        timeout=300,
+    )
+    response.raise_for_status()
+    result = str(json.loads(response.json()["message"]["content"]).get("translation", "")).strip()
+    # Throw away answers in the wrong language, or ones that wander off (far longer than the original).
+    if not result or not _in_language(result, lang) or len(result) > 2 * len(text) + 40:
+        return ""
+    return result
+
+
+def _translate_batch() -> int:
+    """Translate up to BATCH_SIZE titles and project descriptions on the list
+    into the interface language. Returns how many were done."""
+    with db.connect() as conn:
+        lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
+        done_already = db.load_translations(conn, lang)
+        todo = [
+            (kind, text) for kind, text in db.texts_on_the_list(conn)
+            if text not in done_already and needs_translation(text, lang)
+        ][:BATCH_SIZE]
+
+    for kind, text in todo:
+        try:
+            translation = translate(text, "GitHub issue title" if kind == "title" else "project description", lang)
+        except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as error:
+            print(f"Couldn't translate: {error}", flush=True)
+            translation = ""
+        with db.connect() as conn:
+            db.save_translation(conn, text, lang, translation)
+    return len(todo)
+
+
 def summarize_forever() -> None:
-    """Keep summarizing new issues in the background, one at a time."""
+    """Keep summarizing and translating new issues in the background, one at a time."""
     while True:
         status["state"] = check()
         status["available"] = status["state"] == "on"
-        done = _summarize_batch() if status["available"] else 0
+        done = _summarize_batch() + _translate_batch() if status["available"] else 0
         if done == 0:
             wake.wait(IDLE_WAIT)
             wake.clear()

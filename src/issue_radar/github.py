@@ -1,10 +1,13 @@
 import json
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 import os
 import shutil
 import subprocess
 
 import httpx
+
+from issue_radar.languages import from_github
 
 API_URL = "https://api.github.com"
 
@@ -148,6 +151,50 @@ def contributed_repos(max_pages: int = 3) -> dict[str, int]:
             if len(pull_requests) < 100:
                 break
     return counts
+
+
+def whoami() -> str | None:
+    """The signed-in GitHub user's name, or None if we aren't signed in."""
+    if not has_token():
+        return None
+    with _client() as client:
+        response = client.get("/user")
+        if response.status_code == 401:
+            return None
+        response.raise_for_status()
+        return response.json()["login"]
+
+
+# How much one repository counts when guessing your languages. Projects you've
+# sent pull requests to count more: fixing issues there is what Issue Radar is for.
+OWN_REPO_WEIGHT = 1
+CONTRIBUTED_REPO_WEIGHT = 2
+MAX_CONTRIBUTED_REPOS = 15
+MAX_GUESSED_LANGUAGES = 4
+
+
+def guess_languages(login: str, contributed: list[str]) -> list[str]:
+    """The languages you use most, from your public repositories (not forks)
+    and the repositories you've contributed to. Most used first."""
+    scores: Counter[str] = Counter()
+    with _client() as client:
+        response = client.get(f"/users/{login}/repos", params={"type": "owner", "per_page": 100})
+        response.raise_for_status()
+        own = {repo["full_name"] for repo in response.json()}
+        for repo in response.json():
+            code = from_github(repo.get("language"))
+            if code and not repo.get("fork"):
+                scores[code] += OWN_REPO_WEIGHT
+
+        for name in [repo for repo in contributed if repo not in own][:MAX_CONTRIBUTED_REPOS]:
+            response = client.get(f"/repos/{name}")
+            if response.status_code == 404:  # deleted or made private since
+                continue
+            response.raise_for_status()
+            code = from_github(response.json().get("language"))
+            if code:
+                scores[code] += CONTRIBUTED_REPO_WEIGHT
+    return [code for code, _ in scores.most_common(MAX_GUESSED_LANGUAGES)]
 
 
 def issue_body(url: str) -> str:

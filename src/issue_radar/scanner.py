@@ -53,7 +53,7 @@ def recheck() -> None:
     try:
         results, labels = check_issues({issue["id"]: issue["url"] for issue in issues})
     except (httpx.HTTPError, ValueError) as error:
-        print(f"İşler yeniden kontrol edilemedi: {error}", flush=True)
+        print(f"Couldn't re-check issues: {error}", flush=True)
         return
     with db.connect() as conn:
         db.set_availability(conn, results, labels)
@@ -77,7 +77,7 @@ def track() -> None:
     try:
         progress = track_issues({issue["id"]: issue["url"] for issue in issues})
     except (httpx.HTTPError, ValueError, KeyError) as error:
-        print(f"Katkı takibi yapılamadı: {error}", flush=True)
+        print(f"Couldn't follow your progress: {error}", flush=True)
         return
 
     reached = []
@@ -102,7 +102,7 @@ def refresh_repo_info() -> None:
         try:
             info = repo_info(repo)
         except httpx.HTTPError as error:
-            print(f"Proje bilgisi alınamadı ({repo}): {error}", flush=True)
+            print(f"Couldn't get project info ({repo}): {error}", flush=True)
             continue
         with db.connect() as conn:
             db.save_repo_info(conn, repo, info)
@@ -160,11 +160,30 @@ def refresh_contributions() -> None:
     try:
         counts = contributed_repos()
     except Exception as error:
-        print(f"Katkıların alınamadı: {error}", flush=True)
+        print(f"Couldn't get your contributions: {error}", flush=True)
         return
     with db.connect() as conn:
         db.save_contributions(conn, counts)
     time.sleep(SEARCH_PAUSE)  # don't search again right away
+
+
+def pick_languages_on_first_run() -> None:
+    """If you've never picked languages, start with the ones you use on GitHub.
+    Once you've saved your own choice, we leave it alone."""
+    global _looked_at_github_languages
+    if _looked_at_github_languages:
+        return
+    with db.connect() as conn:
+        if settings.languages_were_chosen(conn):
+            return
+    languages = settings.languages_from_github()
+    if languages:
+        print(f"Picked your languages from GitHub: {', '.join(languages)}", flush=True)
+    # Signed in but nothing we can search (say, only HTML): keep the defaults, don't ask every scan.
+    _looked_at_github_languages = has_token()
+
+
+_looked_at_github_languages = False
 
 
 def scan_forever() -> None:
@@ -181,6 +200,7 @@ def scan_forever() -> None:
         status["has_token"] = has_token()
         try:
             refresh_contributions()
+            pick_languages_on_first_run()
             new_issues, error = scan()
             pending += new_issues
             if new_issues:
@@ -199,7 +219,7 @@ def scan_forever() -> None:
         status["error_kind"] = _error_kind(error) if error else None
         status["retry_at"] = status["last_scan"] + timedelta(seconds=RETRY_INTERVAL) if error else None
         if error:
-            print(f"Tarama başarısız: {error}", flush=True)
+            print(f"Scan failed: {error}", flush=True)
 
         can_notify = last_notified is None or time.monotonic() - last_notified >= NOTIFY_INTERVAL
         if pending and can_notify:
