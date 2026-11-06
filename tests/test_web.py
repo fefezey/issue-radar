@@ -61,7 +61,7 @@ def test_buttons_work_with_and_without_javascript(client):
 
 
 def test_settings_need_at_least_one_language(client):
-    response = client.post("/settings", data={"min_stars": "100"})
+    response = client.post("/settings", data={})
     assert "error=no_language" in response.headers["Location"]
 
 

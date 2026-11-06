@@ -105,12 +105,11 @@ Bildirimler Issue Radar adı ve radar logosuyla gelir: program bunun için ilk b
 
 ## Ayarlar
 
-Sayfadaki **Ayarlar** bölümünden şunları seçebilirsin:
+Sayfadaki **Ayarlar** bölümünden **taranacak dilleri** seçebilirsin: Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin, Swift.
 
-- **Taranacak diller:** Python, JavaScript, TypeScript, Go, Rust, Java, C#, C++, Ruby, PHP, Kotlin, Swift. Varsayılan: Python ve JavaScript.
-- **En az yıldız:** Fark etmez, 50, 100, 500 ya da 1000. Varsayılan: 100.
+İlk açılışta diller GitHub hesabından seçilir: kendi projelerinin dilleri ve PR gönderdiğin projelerin dilleri (bunlar iki kat sayılır). **Dillerimi GitHub'dan seç** düğmesi bunu yeniden yapar. GitHub'a hiç bağlanmadıysan Python ve JavaScript kullanılır. Değişiklikler hemen uygulanır ve yeni bir tarama başlar.
 
-Değişiklikler hemen uygulanır ve yeni bir tarama başlar.
+Yalnızca en az 100 yıldızı olan projeler gösterilir. Küçük projeler çoğu zaman sessizleşir ve ilk PR'ına kimse bakmayabilir.
 
 Şunlar şimdilik kodun içinde, `src/issue_radar/scanner.py` dosyasında:
 

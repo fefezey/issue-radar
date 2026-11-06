@@ -630,17 +630,6 @@
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend><label for="min-stars">{{ t('settings.stars.title') }}</label></legend>
-          <p class="hint">{{ t('settings.stars.hint') }}</p>
-          <select id="min-stars" name="min_stars">
-            {% for choice in min_stars_choices %}
-              <option value="{{ choice }}" {% if choice == min_stars %}selected{% endif %}>
-                {{ t('settings.stars.any') if choice == 0 else choice }}
-              </option>
-            {% endfor %}
-          </select>
-        </fieldset>
 
         <div class="actions">
           <button class="btn primary">{{ t('settings.save') }}</button>

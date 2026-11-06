@@ -115,8 +115,7 @@ def index():
         tab = "new"
     with db.connect() as conn:
         languages = settings.search_languages(conn)
-        min_stars = settings.min_stars(conn)
-        new_issues = db.list_issues(conn, "new", languages, min_stars)
+        new_issues = db.list_issues(conn, "new", languages, settings.MIN_STARS)
         interested_issues = db.list_issues(conn, "interested")
         contributed = db.load_contributions(conn) or {}
         if contributed:
@@ -164,8 +163,6 @@ def index():
         retry_at=status["retry_at"].astimezone().strftime("%H:%M") if status["retry_at"] else "",
         all_languages=SUPPORTED_LANGUAGES,
         chosen_languages=languages,
-        min_stars=min_stars,
-        min_stars_choices=settings.MIN_STARS_CHOICES,
         saved=request.args.get("saved") == "1",
         picked=request.args.get("picked") == "1",
         settings_error=request.args.get("error"),
@@ -175,12 +172,9 @@ def index():
 
 @app.post("/settings")
 def save_settings():
-    stars = request.form.get("min_stars", type=int)
-    if stars not in settings.MIN_STARS_CHOICES:
-        stars = settings.DEFAULT_MIN_STARS
     try:
         with db.connect() as conn:
-            settings.save(conn, request.form.getlist("languages"), stars)
+            settings.save_languages(conn, request.form.getlist("languages"))
     except ValueError:
         return redirect(url_for("index", tab="settings", error="no_language"))
     wake.set()  # scan again right away with the new settings

@@ -105,12 +105,11 @@ Notifications show Issue Radar's name and radar icon: on first use it builds a t
 
 ## Configuration
 
-Open **Settings** on the page to choose:
+Open **Settings** on the page to choose the **languages to search**: Python, JavaScript, TypeScript, Go, Rust, Java, C, C#, C++, Ruby, PHP, Kotlin, Swift.
 
-- **Languages to search** — Python, JavaScript, TypeScript, Go, Rust, Java, C#, C++, Ruby, PHP, Kotlin, Swift. Default: Python and JavaScript.
-- **Minimum stars** — any, 50, 100, 500 or 1000. Default: 100.
+On first run they're picked from your GitHub account: the languages of your own repositories and, counted double, of the projects you've sent pull requests to. **Pick my languages from GitHub** does it again; if you've never signed in, Python and JavaScript are used. Changes apply right away, and a new scan starts immediately.
 
-Changes apply right away, and a new scan starts immediately.
+Only projects with at least 100 stars are shown: smaller ones often go quiet, and a first PR there may never be reviewed.
 
 These are still set in the code, in `src/issue_radar/scanner.py`:
 

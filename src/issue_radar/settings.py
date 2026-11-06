@@ -6,8 +6,8 @@ from issue_radar import db, github
 from issue_radar.languages import SUPPORTED_LANGUAGES
 
 DEFAULT_LANGUAGES = ["python", "javascript"]
-DEFAULT_MIN_STARS = 100
-MIN_STARS_CHOICES = [0, 50, 100, 500, 1000]
+# Smaller projects often go quiet, and a first PR there may never be looked at.
+MIN_STARS = 100
 
 
 def search_languages(conn: sqlite3.Connection) -> list[str]:
@@ -19,18 +19,6 @@ def search_languages(conn: sqlite3.Connection) -> list[str]:
 
 def languages_were_chosen(conn: sqlite3.Connection) -> bool:
     return db.get_setting(conn, "search_languages") is not None
-
-
-def min_stars(conn: sqlite3.Connection) -> int:
-    saved = db.get_setting(conn, "min_stars")
-    return int(saved) if saved is not None else DEFAULT_MIN_STARS
-
-
-def save(conn: sqlite3.Connection, languages: list[str], stars: int) -> None:
-    if stars not in MIN_STARS_CHOICES:
-        raise ValueError(f"Minimum stars must be one of {MIN_STARS_CHOICES}.")
-    save_languages(conn, languages)
-    db.set_setting(conn, "min_stars", str(stars))
 
 
 def save_languages(conn: sqlite3.Connection, languages: list[str]) -> None:

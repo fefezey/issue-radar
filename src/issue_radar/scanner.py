@@ -120,7 +120,6 @@ def scan() -> tuple[list[dict], Exception | None]:
     """
     with db.connect() as conn:
         languages = settings.search_languages(conn)
-        min_stars = settings.min_stars(conn)
         cached_stars = db.load_repo_stars(conn, max_age=STARS_MAX_AGE)
 
     # Fetch everything first: talking to GitHub takes a while, and we must not
@@ -132,7 +131,7 @@ def scan() -> tuple[list[dict], Exception | None]:
         if i > 0:
             time.sleep(SEARCH_PAUSE)
         try:
-            found[language] = find_issues(language, min_stars=min_stars, limit=20, stars=stars)
+            found[language] = find_issues(language, min_stars=settings.MIN_STARS, limit=20, stars=stars)
         except Exception as e:  # e.g. GitHub's rate limit; keep what we have
             error = e
             break
