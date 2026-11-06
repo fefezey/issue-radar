@@ -891,7 +891,7 @@
     <p class="notice draft-no-claim" hidden>{{ t('draft.no_claim') }}</p>
     <label class="hint" for="draft-text">{{ t('draft.intro') }}</label>
     <textarea id="draft-text" rows="7" lang="en" spellcheck="true"></textarea>
-    <p class="hint draft-hint">{{ t('draft.hint') }}</p>
+    <p class="hint draft-hint warn" role="alert" hidden>{{ t('draft.hint') }}</p>
     {# Write in your own language and turn it into English, or read the English in yours.
        Uses the local AI model, so only shown when it's on. #}
     {% if ai_on %}
@@ -1221,7 +1221,7 @@
     draftDialog.dataset.placeholder = data.placeholder;
     draftDialog.dataset.warned = "";
     draftText.value = data.draft;
-    draftHint.classList.remove("warn");
+    draftHint.hidden = true;
     copyButton.textContent = TEXT.copy;
     resetTranslateTools();
     draftDialog.showModal();
@@ -1232,7 +1232,7 @@
     // Copy-paste comments look like spam: ask once for the user's own sentence.
     if (draftText.value.includes(draftDialog.dataset.placeholder) && !draftDialog.dataset.warned) {
       draftDialog.dataset.warned = "1";
-      draftHint.classList.add("warn");
+      draftHint.hidden = false;
       copyButton.textContent = TEXT.copyAnyway;
       selectPlaceholder();
       return;

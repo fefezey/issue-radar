@@ -68,7 +68,7 @@
   "action.draft": "Yorum taslağı",
   "draft.title": "Bu işi almak için yorum yaz",
   "draft.intro": "Bakımcılar genelde işi birine atamadan önce bir yorum bekler. İngilizce taslak hazır:",
-  "draft.hint": "Köşeli parantezli satırı kendi cümlenle değiştir: işi nasıl çözmeyi düşündüğünü yaz. Türkçe yazıp \"İngilizceye çevir\"e basabilirsin. Kalıp yorumlar spam gibi görünebilir.",
+  "draft.hint": "Önce köşeli parantezli satıra işi nasıl çözeceğini kendi cümlenle yaz.",
   "draft.no_claim": "Bu projenin katkı rehberi işleri kimseye atamadıklarını ya da sormadan PR açabileceğini söylüyor. Yorum şart değil; istersen doğrudan PR açabilirsin.",
   "draft.copy": "Kopyala ve GitHub'da aç",
   "draft.copy_anyway": "Yine de kopyala",

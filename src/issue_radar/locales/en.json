@@ -77,7 +77,7 @@
   "action.draft": "Comment draft",
   "draft.title": "Comment to claim this issue",
   "draft.intro": "Maintainers usually wait for a comment before assigning an issue. Here's a draft:",
-  "draft.hint": "Replace the line in [brackets] with your own sentence on how you'd fix it. Copy-paste comments can look like spam.",
+  "draft.hint": "First, replace the line in [brackets] with how you'd fix it, in your own words.",
   "draft.no_claim": "This project's contributing guide says they don't assign issues, or that you can open a pull request without asking. A comment is optional.",
   "draft.copy": "Copy and open on GitHub",
   "draft.copy_anyway": "Copy anyway",
