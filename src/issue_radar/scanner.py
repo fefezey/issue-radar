@@ -51,13 +51,18 @@ def recheck() -> None:
     if not issues:
         return
     try:
-        results, labels = check_issues({issue["id"]: issue["url"] for issue in issues})
+        results, labels, yours = check_issues({issue["id"]: issue["url"] for issue in issues})
     except (httpx.HTTPError, ValueError) as error:
         print(f"Couldn't re-check issues: {error}", flush=True)
         return
     with db.connect() as conn:
         db.set_availability(conn, results, labels)
         lang = db.get_setting(conn, "language") or DEFAULT_LANGUAGE
+        # You took one on GitHub without pressing "I'm interested": follow it anyway.
+        # track(), right after this, finds how far you've got and tells you.
+        for issue in issues:
+            if issue["status"] == "new" and issue["id"] in yours:
+                db.set_status(conn, issue["id"], "interested")
     # An issue you wanted has just been taken by someone else: tell you now.
     for issue in issues:
         if issue["status"] == "interested" and results.get(issue["id"]) == "taken":

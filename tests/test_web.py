@@ -192,3 +192,15 @@ def test_linux_notifications_use_notify_send(monkeypatch):
     monkeypatch.setattr(notify.subprocess, "run", lambda args, **kwargs: ran.append(args))
     notify.notify("Issue Radar", "owner/repo", "Fix a typo")
     assert ran == [["notify-send", "--app-name=Issue Radar", "Issue Radar", "owner/repo\nFix a typo"]]
+
+
+def test_an_issue_you_took_on_github_moves_to_interested(client, monkeypatch):
+    from issue_radar import scanner
+
+    monkeypatch.setitem(scanner.status, "has_token", True)
+    monkeypatch.setattr(scanner, "check_issues", lambda urls: ({i: "open" for i in urls}, {}, {1}))
+    monkeypatch.setattr(scanner, "notify", lambda *args: None)
+    scanner.recheck()
+    with db.connect() as conn:
+        assert db.get_issue(conn, 1)["status"] == "interested"  # you commented on GitHub
+        assert db.get_issue(conn, 2)["status"] == "new"

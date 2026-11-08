@@ -35,14 +35,17 @@ def test_check_issues(monkeypatch):
             "6": check_fields(comments=[("someone", "Can I work on this?")]),
             "7": check_fields(comments=[(ME, "I'd like to work on this")]),
             "8": None,  # deleted or moved
+            "9": check_fields(state="CLOSED", pr_authors=[ME]),  # your pull request closed it
+            "10": check_fields(comments=[(ME, "Is this still reproducible?")]),  # any comment of yours
         },
     )
-    results, labels = github.check_issues({})
+    results, labels, yours = github.check_issues({})
     assert results == {
         "1": "open", "2": "closed", "3": "taken", "4": "open",
-        "5": "taken", "6": "taken", "7": "open", "8": "closed",
+        "5": "taken", "6": "taken", "7": "open", "8": "closed", "9": "closed", "10": "open",
     }
     assert labels["1"] == ["good first issue"]
+    assert yours == {"4", "7", "9", "10"}
 
 
 def track_fields(assignees=(), commenters=(), linked=(), mentioned=()):

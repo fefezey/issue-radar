@@ -246,23 +246,35 @@ def _ask_about_issues(urls: dict[int, str], fragment: str) -> tuple[str, dict[in
     return me, issues
 
 
-def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[str]]]:
+def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[str]], set[int]]:
     """Look again at issues we saved earlier, all in one request.
 
-    Returns, by issue id, "open", "taken" or "closed", and the issue's
-    current labels. Your own assignment, pull request or comment doesn't
-    count as "taken". Issues GitHub couldn't answer about are left out.
+    Returns, by issue id, "open", "taken" or "closed"; the issue's current
+    labels; and the issues you've taken part in (a comment, an assignment or
+    a pull request of yours), even if you did it on GitHub, not from our page.
+    Your own assignment, pull request or comment doesn't count as "taken".
+    Issues GitHub couldn't answer about are left out.
     """
     me, answers = _ask_about_issues(urls, _CHECK_FIELDS)
 
     def someone_else(actor: dict | None) -> bool:
         return (actor or {}).get("login") not in (me, None)
 
+    def you(actor: dict | None) -> bool:
+        return bool(me) and (actor or {}).get("login") == me
+
     results: dict[int, str] = {}
     labels: dict[int, list[str]] = {}
+    yours: set[int] = set()
     for issue_id, issue in answers.items():
         if issue is not None:
             labels[issue_id] = [label["name"] for label in issue["labels"]["nodes"]]
+            if (
+                any(you(a) for a in issue["assignees"]["nodes"])
+                or any(you(pr["author"]) for pr in issue["closedByPullRequestsReferences"]["nodes"])
+                or any(you(c["author"]) for c in issue["comments"]["nodes"])
+            ):
+                yours.add(issue_id)
         if issue is None or issue["state"] == "CLOSED":  # closed, deleted or moved
             results[issue_id] = "closed"
         elif (
@@ -276,7 +288,7 @@ def check_issues(urls: dict[int, str]) -> tuple[dict[int, str], dict[int, list[s
             results[issue_id] = "taken"
         else:
             results[issue_id] = "open"
-    return results, labels
+    return results, labels, yours
 
 
 # How far back to look at a project's merged pull requests.
