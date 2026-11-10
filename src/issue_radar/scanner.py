@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from issue_radar import ai, db, settings
 import httpx
 
-from issue_radar.github import check_issues, contributed_repos, find_issues, has_token, repo_info, track_issues
+from issue_radar.github import check_issues, find_issues, my_pull_requests, has_token, repo_info, track_issues
 from issue_radar.i18n import DEFAULT_LANGUAGE, translate
 from issue_radar.notify import notify, notify_new_issues
 
@@ -94,6 +94,8 @@ def track() -> None:
             if now["stage"] != issue["stage"] and now["stage"] in ("assigned", "merged"):
                 reached.append((issue, now["stage"]))
             db.save_progress(conn, issue["id"], now["stage"], now["pr_url"])
+        if any(stage == "merged" for _, stage in reached):
+            db.check_contributions_soon(conn)  # so it shows under Contributions right away
     for issue, stage in reached:
         notify("Issue Radar", translate(lang, f"notify.{stage}"), issue["title"])
 
@@ -152,7 +154,8 @@ def scan() -> tuple[list[dict], Exception | None]:
 
 
 def refresh_contributions() -> None:
-    """Once a day, look up which projects you've already sent pull requests to.
+    """Once a day, look up which projects you've already sent pull requests to,
+    and which of your pull requests were merged.
 
     Failing here is not a problem: issues are still shown, just without the
     "your first contribution" badge.
@@ -162,12 +165,12 @@ def refresh_contributions() -> None:
     if checked and datetime.now(timezone.utc) - checked < CONTRIBUTIONS_MAX_AGE:
         return
     try:
-        counts = contributed_repos()
+        counts, merged = my_pull_requests()
     except Exception as error:
         print(f"Couldn't get your contributions: {error}", flush=True)
         return
     with db.connect() as conn:
-        db.save_contributions(conn, counts)
+        db.save_contributions(conn, counts, merged)
     time.sleep(SEARCH_PAUSE)  # don't search again right away
 
 

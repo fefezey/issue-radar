@@ -135,5 +135,15 @@
   "signal.unanswered": "Most pull requests from outsiders go unanswered",
   "signal.answers_same_day": "Usually answers outsiders' pull requests the same day",
   "signal.answers_in_days.one": "Usually answers outsiders' pull requests within a day or so",
-  "signal.answers_in_days.other": "Usually answers outsiders' pull requests within {days} days"
+  "signal.answers_in_days.other": "Usually answers outsiders' pull requests within {days} days",
+  "nav.contributions": "Contributions",
+  "contributions.summary.one": "{count} pull request merged, in {projects} project.",
+  "contributions.summary.other": "{count} pull requests merged, across {projects} projects.",
+  "contributions.merged.one": "{count} merged",
+  "contributions.merged.other": "{count} merged",
+  "contributions.more.one": "{count} more pull request",
+  "contributions.more.other": "{count} more pull requests",
+  "contributions.from_radar": "Via Issue Radar",
+  "empty.contributions.title": "No merged pull requests yet",
+  "empty.contributions.text": "Your first pull request merged into someone else's project will show up here."
 }

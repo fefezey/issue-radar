@@ -13,7 +13,7 @@ from issue_radar.i18n import available_languages, translate
 from issue_radar.web import app, code
 
 LOCALES = Path(__file__).parent.parent / "src" / "issue_radar" / "locales"
-TABS = ["", "?tab=interested", "?tab=hidden", "?tab=settings", "?easy=1"]
+TABS = ["", "?tab=interested", "?tab=contributions", "?tab=hidden", "?tab=settings", "?easy=1"]
 
 
 @pytest.fixture
@@ -204,3 +204,21 @@ def test_an_issue_you_took_on_github_moves_to_interested(client, monkeypatch):
     with db.connect() as conn:
         assert db.get_issue(conn, 1)["status"] == "interested"  # you commented on GitHub
         assert db.get_issue(conn, 2)["status"] == "new"
+
+
+def test_contributions_tab(client):
+    page = client.get("/?tab=contributions").get_data(as_text=True)
+    assert 'class="empty"' in page
+
+    with db.connect() as conn:
+        db.set_setting(conn, "language", "tr")
+        db.save_contributions(conn, {"o/p": 5}, [
+            {"url": f"https://github.com/o/p/pull/{n}", "repo": "o/p", "title": f"PR {n}", "merged_at": f"2026-11-0{n}T10:00:00Z"}
+            for n in range(1, 6)
+        ])
+        conn.execute("UPDATE issues SET pr_url = 'https://github.com/o/p/pull/5' WHERE id = 4")
+    page = client.get("/?tab=contributions").get_data(as_text=True)
+    assert "5 PR&#39;ın 1 projede birleşti." in page
+    assert page.index("PR 5") < page.index("PR 1")  # newest first
+    assert "2 PR daha" in page  # the oldest two are folded away
+    assert page.count("Issue Radar ile") == 1

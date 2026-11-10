@@ -172,3 +172,30 @@ def test_guess_languages_from_your_repos(monkeypatch):
     )
     # Contributions count double; your own repos once; gone repos are skipped.
     assert github.guess_languages("me", ["x/ts", "gone/repo", "y/cpp", "me/a"]) == ["c", "typescript", "cpp", "python"]
+
+
+def test_my_pull_requests_counts_projects_and_keeps_merged_ones_elsewhere(monkeypatch):
+    def item(repo, number, merged_at=None):
+        return {
+            "repository_url": f"{github.API_URL}/repos/{repo}",
+            "html_url": f"https://github.com/{repo}/pull/{number}",
+            "title": f"PR {number}",
+            "pull_request": {"merged_at": merged_at},
+        }
+
+    def answer(request):
+        if request.url.path == "/user":
+            return httpx.Response(200, json={"login": "Me"})
+        return httpx.Response(200, json={"items": [
+            item("o/p", 1, "2026-11-01T10:00:00Z"),
+            item("o/p", 2),  # still open, or closed without merging
+            item("x/y", 3, "2026-11-05T10:00:00Z"),
+            item("me/own", 4, "2026-11-06T10:00:00Z"),  # your own project: not a contribution
+        ]})
+
+    monkeypatch.setattr(
+        github, "_client", lambda: httpx.Client(base_url=github.API_URL, transport=httpx.MockTransport(answer))
+    )
+    counts, merged = github.my_pull_requests()
+    assert counts == {"o/p": 2, "x/y": 1, "me/own": 1}
+    assert [pr["url"] for pr in merged] == ["https://github.com/x/y/pull/3", "https://github.com/o/p/pull/1"]

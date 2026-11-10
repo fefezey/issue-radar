@@ -23,7 +23,7 @@ Her şey kendi Mac'inde çalışır. Verilerin ve tercihlerin bilgisayarında ka
 
 Issue Radar, takip ettiğin dillerde yeni başlayanlara uygun işleri bulur ve başkasının çoktan aldığı işleri ayıklar. Dilleri ilk açılışta senin GitHub hesabına bakarak kendisi seçer. Her işin yanında projenin ne olduğunu ve ekip dışından gelen PR'ları birleştirip birleştirmediğini görürsün. Yeni gelenlerin ekipten ilk cevabı genelde kaç günde aldığı da yazar, böylece cevap vermeyen bir projeye boşuna emek harcamazsın.
 
-Bilgisayarında çalışan bir yapay zeka varsa işleri özetler ve başlıklarını senin diline çevirir. Bir işi almaya karar verdiğinde sana hazır bir yorum taslağı, bakman gereken dosyaları ve projenin kurulum ve test komutlarını gösterir. Yorumunu Türkçe yazarsan tek tuşla İngilizceye çevirebilirsin. Sonra ilk yorumundan PR'ının birleşmesine kadar ilerlemeni takip eder ve önemli bir şey olduğunda Mac'inde haber verir.
+Bilgisayarında çalışan bir yapay zeka varsa işleri özetler ve başlıklarını senin diline çevirir. Bir işi almaya karar verdiğinde sana hazır bir yorum taslağı, bakman gereken dosyaları ve projenin kurulum ve test komutlarını gösterir. Yorumunu Türkçe yazarsan tek tuşla İngilizceye çevirebilirsin. Sonra ilk yorumundan PR'ının birleşmesine kadar ilerlemeni takip eder ve önemli bir şey olduğunda Mac'inde haber verir. İşi doğrudan GitHub'dan almış olsan bile bunu fark eder. Başkalarının projelerinde birleşen bütün PR'ların da Katkılarım bölümünde proje proje listelenir.
 
 İleride daha fazla arayüz dili eklemeyi ([kendi dilini ekleyebilirsin](#dil-ekle)), Windows'ta bildirim göstermeyi ve Telegram ya da Discord'dan haber vermeyi planlıyoruz.
 

@@ -126,13 +126,15 @@ def find_issues(
     return issues
 
 
-def contributed_repos(max_pages: int = 3) -> dict[str, int]:
-    """Repositories where the signed-in user has opened pull requests, and how many.
+def my_pull_requests(max_pages: int = 3) -> tuple[dict[str, int], list[dict]]:
+    """Your pull requests, from one search: how many you've opened in each
+    project, and the ones merged into other people's projects, newest first.
 
     Every PR counts, merged or not: once you've opened one somewhere,
     it's no longer your first contribution there.
     """
     counts: dict[str, int] = {}
+    merged: list[dict] = []
     with _client() as client:
         user = client.get("/user")
         user.raise_for_status()
@@ -141,16 +143,25 @@ def contributed_repos(max_pages: int = 3) -> dict[str, int]:
         for page in range(1, max_pages + 1):
             response = client.get(
                 "/search/issues",
-                params={"q": f"is:pr author:{login}", "per_page": 100, "page": page},
+                params={"q": f"is:pr author:{login}", "sort": "created", "order": "desc", "per_page": 100, "page": page},
             )
             response.raise_for_status()
             pull_requests = response.json()["items"]
             for pr in pull_requests:
                 repo = pr["repository_url"].removeprefix(f"{API_URL}/repos/")
                 counts[repo] = counts.get(repo, 0) + 1
+                merged_at = (pr.get("pull_request") or {}).get("merged_at")
+                if merged_at and not repo.lower().startswith(f"{login.lower()}/"):
+                    merged.append({"url": pr["html_url"], "repo": repo, "title": pr["title"], "merged_at": merged_at})
             if len(pull_requests) < 100:
                 break
-    return counts
+    merged.sort(key=lambda pr: pr["merged_at"], reverse=True)
+    return counts, merged
+
+
+def contributed_repos() -> dict[str, int]:
+    """Repositories where you've opened pull requests, and how many."""
+    return my_pull_requests()[0]
 
 
 def whoami() -> str | None:

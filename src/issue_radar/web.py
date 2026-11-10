@@ -21,7 +21,7 @@ from issue_radar.scanner import status, wake
 app = Flask(__name__)
 app.add_template_filter(language_name, "language")
 
-TABS = ("new", "interested", "hidden", "settings")
+TABS = ("new", "interested", "contributions", "hidden", "settings")
 
 
 def t(key: str, count: int | None = None, **values) -> str:
@@ -122,6 +122,9 @@ def index():
             # Projects you haven't contributed to yet come first; newest first within each group.
             new_issues = sorted(new_issues, key=lambda issue: issue["repo"] in contributed)
         hidden_repos = db.list_blocked_repos(conn)
+        merged = db.merged_by_project(conn)
+        # Pull requests for issues found here, to tell them apart.
+        from_radar = {row["pr_url"] for row in conn.execute("SELECT pr_url FROM issues WHERE pr_url IS NOT NULL")}
         new_count = len(new_issues)
         # Docs, tests and translations are the gentlest first contributions.
         kinds = {
@@ -141,7 +144,14 @@ def index():
         "index.html",
         tab=tab,
         issues=new_issues if tab == "new" else interested_issues,
-        counts={"new": new_count, "interested": len(interested_issues), "hidden": len(hidden_repos)},
+        counts={
+            "new": new_count,
+            "interested": len(interested_issues),
+            "contributions": sum(len(prs) for _, prs in merged),
+            "hidden": len(hidden_repos),
+        },
+        merged=merged,
+        from_radar=from_radar,
         groups=group_by_project(new_issues),
         repos=repos,
         translations=translations,

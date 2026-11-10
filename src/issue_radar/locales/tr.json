@@ -123,5 +123,12 @@
   "settings.error.github_languages": "GitHub'da taradığımız dillerden birini kullanan bir projeni bulamadım. Dilleri aşağıdan kendin seç.",
   "signal.unanswered": "Ekip dışından gelen PR'ların çoğu cevapsız kalıyor",
   "signal.answers_same_day": "Ekip dışından gelen PR'lara genelde aynı gün cevap veriyor",
-  "signal.answers_in_days.other": "Ekip dışından gelen PR'lara genelde {days} günde cevap veriyor"
+  "signal.answers_in_days.other": "Ekip dışından gelen PR'lara genelde {days} günde cevap veriyor",
+  "nav.contributions": "Katkılarım",
+  "contributions.summary.other": "{count} PR'ın {projects} projede birleşti.",
+  "contributions.merged.other": "{count} PR birleşti",
+  "contributions.more.other": "{count} PR daha",
+  "contributions.from_radar": "Issue Radar ile",
+  "empty.contributions.title": "Henüz birleşen bir PR'ın yok",
+  "empty.contributions.text": "Başkasının projesine gönderdiğin ilk PR birleşince burada görünecek."
 }

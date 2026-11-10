@@ -35,6 +35,14 @@ CREATE TABLE IF NOT EXISTS contributions (
     pull_requests INTEGER NOT NULL
 );
 
+-- Your pull requests merged into other people's projects, refreshed with contributions.
+CREATE TABLE IF NOT EXISTS merged_pull_requests (
+    url       TEXT PRIMARY KEY,
+    repo      TEXT NOT NULL,
+    title     TEXT NOT NULL,
+    merged_at TEXT NOT NULL
+);
+
 -- Issue titles and project descriptions in your interface language,
 -- translated once by the local AI. An empty text means "keep the original".
 CREATE TABLE IF NOT EXISTS translations (
@@ -380,11 +388,31 @@ def save_repo_stars(conn: sqlite3.Connection, stars: dict[str, int]) -> None:
     )
 
 
-def save_contributions(conn: sqlite3.Connection, counts: dict[str, int]) -> None:
-    """Replace the list of projects you've contributed to."""
+def save_contributions(conn: sqlite3.Connection, counts: dict[str, int], merged: list[dict] | None = None) -> None:
+    """Replace the list of projects you've contributed to, and of your merged pull requests."""
     conn.execute("DELETE FROM contributions")
     conn.executemany("INSERT INTO contributions (repo, pull_requests) VALUES (?, ?)", counts.items())
+    if merged is not None:
+        conn.execute("DELETE FROM merged_pull_requests")
+        conn.executemany(
+            "INSERT OR REPLACE INTO merged_pull_requests (url, repo, title, merged_at) VALUES (:url, :repo, :title, :merged_at)",
+            merged,
+        )
     set_setting(conn, "contributions_checked_at", datetime.now(timezone.utc).isoformat())
+
+
+def check_contributions_soon(conn: sqlite3.Connection) -> None:
+    """Look your pull requests up again at the next scan, not tomorrow."""
+    conn.execute("DELETE FROM settings WHERE key = 'contributions_checked_at'")
+
+
+def merged_by_project(conn: sqlite3.Connection) -> list[tuple[str, list[sqlite3.Row]]]:
+    """Your merged pull requests grouped by project: the project you merged
+    into most recently first, newest pull request first within each."""
+    groups: dict[str, list[sqlite3.Row]] = {}
+    for row in conn.execute("SELECT * FROM merged_pull_requests ORDER BY merged_at DESC"):
+        groups.setdefault(row["repo"], []).append(row)
+    return list(groups.items())
 
 
 def contributions_checked_at(conn: sqlite3.Connection) -> datetime | None:

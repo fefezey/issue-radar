@@ -373,6 +373,21 @@
       border-bottom: 1px solid var(--border);
     }
     .list form:last-child { border-bottom: none; }
+    .list.prs { margin: 0; padding: 0; list-style: none; }
+    .list.prs li {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .list.prs li:last-child { border-bottom: none; }
+    .list.prs a { color: var(--text); text-decoration: none; min-width: 0; overflow-wrap: anywhere; }
+    .list.prs a:hover { text-decoration: underline; }
+    .pr-meta { display: flex; align-items: center; gap: 8px; flex: none; font-size: 12px; color: var(--muted); }
+    .project.contribution .more { margin-top: 0; }
 
     .settings { display: flex; flex-direction: column; gap: 16px; margin: 0; }
     fieldset, .panel {
@@ -578,6 +593,16 @@
   </div>
 </header>
 
+{% macro pr_row(pr) %}
+  <li>
+    <a href="{{ pr.url }}" target="_blank" rel="noopener">{{ pr.title }}</a>
+    <span class="pr-meta">
+      {% if pr.url in from_radar %}<span class="badge kind">{{ t('contributions.from_radar') }}</span>{% endif %}
+      <span>{{ pr.merged_at | ago }}</span>
+    </span>
+  </li>
+{% endmacro %}
+
 <div class="layout">
   <nav aria-label="{{ t('nav.label') }}">
     <a href="{{ url_for('index') }}" {% if tab == 'new' %}aria-current="page"{% endif %}>
@@ -585,6 +610,9 @@
     </a>
     <a href="{{ url_for('index', tab='interested') }}" {% if tab == 'interested' %}aria-current="page"{% endif %}>
       {{ t('nav.interested') }} <span class="count" data-count="interested" {% if not counts.interested %}hidden{% endif %}>{{ counts.interested }}</span>
+    </a>
+    <a href="{{ url_for('index', tab='contributions') }}" {% if tab == 'contributions' %}aria-current="page"{% endif %}>
+      {{ t('nav.contributions') }} <span class="count" {% if not counts.contributions %}hidden{% endif %}>{{ counts.contributions }}</span>
     </a>
     <a href="{{ url_for('index', tab='hidden') }}" {% if tab == 'hidden' %}aria-current="page"{% endif %}>
       {{ t('nav.hidden') }} <span class="count" data-count="hidden" {% if not counts.hidden %}hidden{% endif %}>{{ counts.hidden }}</span>
@@ -656,6 +684,39 @@
             <code class="cmd">brew install ollama &amp;&amp; brew services start ollama &amp;&amp; ollama pull {{ ai_model }}</code>
           {% endif %}
         </section>
+      {% endif %}
+
+    {% elif tab == 'contributions' %}
+      <h1>{{ t('nav.contributions') }}</h1>
+      {% if merged %}
+        <p class="hint">{{ t('contributions.summary', counts.contributions, projects=merged | length) }}</p>
+        {% for repo, prs in merged %}
+          <section class="project contribution">
+            <div class="project-head">
+              <div class="meta">
+                <a class="repo mono" href="https://github.com/{{ repo }}" target="_blank" rel="noopener">{{ repo }}</a>
+                <span class="sep" aria-hidden="true">·</span>
+                <span>{{ t('contributions.merged', prs | length) }}</span>
+              </div>
+            </div>
+            <ul class="list prs">
+              {% for pr in prs[:3] %}{{ pr_row(pr) }}{% endfor %}
+            </ul>
+            {% if prs | length > 3 %}
+              <details class="more">
+                <summary>{{ t('contributions.more', prs | length - 3) }}</summary>
+                <ul class="list prs">
+                  {% for pr in prs[3:] %}{{ pr_row(pr) }}{% endfor %}
+                </ul>
+              </details>
+            {% endif %}
+          </section>
+        {% endfor %}
+      {% else %}
+        <div class="empty">
+          <strong>{{ t('empty.contributions.title') }}</strong>
+          <span>{{ t('empty.contributions.text') }}</span>
+        </div>
       {% endif %}
 
     {% elif tab == 'hidden' %}
