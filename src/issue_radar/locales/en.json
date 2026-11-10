@@ -145,5 +145,7 @@
   "contributions.more.other": "{count} more pull requests",
   "contributions.from_radar": "Via Issue Radar",
   "empty.contributions.title": "No merged pull requests yet",
-  "empty.contributions.text": "Your first pull request merged into someone else's project will show up here."
+  "empty.contributions.text": "Your first pull request merged into someone else's project will show up here.",
+  "draft.taken": "Heads up: someone seems to have taken this issue since the last scan (assigned, opened a pull request or asked in the comments). Have a look on GitHub before you comment.",
+  "draft.closed": "This issue was closed since the last scan. You may want to pick another one."
 }

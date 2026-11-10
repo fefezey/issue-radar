@@ -252,6 +252,7 @@ def draft(issue_id: int):
         if issue is None:
             abort(404)
         policy = db.get_claim_policy(conn, issue["repo"], GUIDE_MAX_AGE)
+    availability = _still_free(issue)
     if policy is None:
         try:
             policy = policy_from_guide(contributing_guide(issue["repo"]))
@@ -266,7 +267,22 @@ def draft(issue_id: int):
         "draft": DRAFT,
         "placeholder": PLAN_PLACEHOLDER,
         "policy": policy,
+        "availability": availability,
     }
+
+
+def _still_free(issue) -> str | None:
+    """Ask GitHub about the issue right now: it may have been taken since the
+    last scan. "open", "taken" or "closed", or None if we couldn't ask."""
+    if not github.has_token():
+        return None
+    try:
+        results, labels, _ = github.check_issues({issue["id"]: issue["url"]})
+    except (httpx.HTTPError, ValueError, KeyError):
+        return None
+    with db.connect() as conn:
+        db.set_availability(conn, results, labels)
+    return results.get(issue["id"])
 
 
 PROJECT_FILES_MAX_AGE = 24 * 60 * 60  # seconds to keep a project's README, guide and file list

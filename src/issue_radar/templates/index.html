@@ -949,6 +949,7 @@
   <form method="dialog" class="draft">
     <h2 id="draft-title">{{ t('draft.title') }}</h2>
     <p class="draft-issue" lang="en"></p>
+    <p class="notice error draft-gone" role="alert" hidden></p>
     <p class="notice draft-no-claim" hidden>{{ t('draft.no_claim') }}</p>
     <label class="hint" for="draft-text">{{ t('draft.intro') }}</label>
     <textarea id="draft-text" rows="7" lang="en" spellcheck="true"></textarea>
@@ -1029,6 +1030,8 @@
   const TEXT = {{ {
     "skipped": t("toast.skipped"),
     "interested": t("toast.interested"),
+    "draftTaken": t("draft.taken"),
+    "draftClosed": t("draft.closed"),
     "hidden": t("toast.hidden", repo="__REPO__"),
     "released": t("toast.released"),
     "undo": t("toast.undo"),
@@ -1278,6 +1281,10 @@
     } catch { return; }
     draftDialog.querySelector(".draft-issue").textContent = data.title;
     draftDialog.querySelector(".draft-no-claim").hidden = data.policy !== "no_claim";
+    // Taken or closed since the last scan: say so before you write a comment.
+    const gone = draftDialog.querySelector(".draft-gone");
+    gone.textContent = data.availability === "taken" ? TEXT.draftTaken : data.availability === "closed" ? TEXT.draftClosed : "";
+    gone.hidden = !gone.textContent;
     draftDialog.dataset.url = data.url;
     draftDialog.dataset.placeholder = data.placeholder;
     draftDialog.dataset.warned = "";

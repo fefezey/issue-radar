@@ -5,6 +5,7 @@ import re
 import string
 from pathlib import Path
 
+import httpx
 import pytest
 
 from conftest import make_issue
@@ -222,3 +223,23 @@ def test_contributions_tab(client):
     assert page.index("PR 5") < page.index("PR 1")  # newest first
     assert "2 PR daha" in page  # the oldest two are folded away
     assert page.count("Issue Radar ile") == 1
+
+
+def test_draft_checks_the_issue_is_still_free(client, monkeypatch):
+    import issue_radar.web as web
+    from issue_radar import github
+
+    monkeypatch.setattr(web, "contributing_guide", lambda repo: "")
+    monkeypatch.setattr(github, "has_token", lambda: True)
+    monkeypatch.setattr(github, "check_issues", lambda urls: ({i: "taken" for i in urls}, {}, set()))
+    answer = client.get("/issues/1/draft").get_json()
+    assert answer["availability"] == "taken"
+    assert "[One sentence" in answer["draft"]
+    with db.connect() as conn:
+        assert db.get_issue(conn, 1)["availability"] == "taken"  # gone from New issues too
+
+    def offline(urls):
+        raise httpx.ConnectError("no internet")
+
+    monkeypatch.setattr(github, "check_issues", offline)
+    assert client.get("/issues/2/draft").get_json()["availability"] is None  # the draft still opens

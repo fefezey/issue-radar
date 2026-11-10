@@ -130,5 +130,7 @@
   "contributions.more.other": "{count} PR daha",
   "contributions.from_radar": "Issue Radar ile",
   "empty.contributions.title": "Henüz birleşen bir PR'ın yok",
-  "empty.contributions.text": "Başkasının projesine gönderdiğin ilk PR birleşince burada görünecek."
+  "empty.contributions.text": "Başkasının projesine gönderdiğin ilk PR birleşince burada görünecek.",
+  "draft.taken": "Dikkat: Bu işi son taramadan beri başkası almış görünüyor (atanmış, PR açmış ya da yorumda istemiş). Yorum yazmadan önce GitHub'da bir bak.",
+  "draft.closed": "Bu iş son taramadan beri kapanmış. Muhtemelen başka bir iş seçmen daha iyi olur."
 }
